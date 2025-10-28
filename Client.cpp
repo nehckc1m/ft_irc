@@ -13,3 +13,7 @@ Client::~Client() {
 int Client::getFd() const {
     return _fd;
 }
+
+std::string Client::getIpAddress() const {
+    return _ipAddress;
+}

@@ -71,8 +71,10 @@ void Server::acceptNewConnection() {
               close(client_socket);
               return;
        }
+       Client newClient(client_socket);
+       clients.push_back(newClient);
        addSocketToPoll(client_socket);
-       std::cout << "New connection accepted" << std::endl;
+       std::cout << "New client connected of fd: " << client_socket << std::endl;
 }
 
 void Server::run(){
@@ -91,7 +93,17 @@ void Server::run(){
                                    acceptNewConnection();
                             } else {
                                    char buffer[1024];
-                                   recv(poll_fds[i].fd, buffer, sizeof(buffer), 0);
+                                   int bytes = recv(poll_fds[i].fd, buffer, sizeof(buffer), 0);
+
+                                   if (bytes <= 0) {
+                                          std::cout << "Client disconnected of fd: " << poll_fds[i].fd << std::endl;
+                                          close(poll_fds[i].fd);
+                                          poll_fds.erase(poll_fds.begin() + i);
+                                          --i;
+                                   } else {
+                                          buffer[bytes] = '\0';
+                                          std::cout << "Received from fd " << poll_fds[i].fd << ": " << buffer << std::endl;
+                                   }
                             }
                      }
               }
