@@ -80,10 +80,10 @@ void Server::acceptNewConnection() {
 void Server::run(){
        std::cout << "Server is running. Waiting for events..." << std::endl;
 
-       while (true) {
+       while (!_signal) {
               int ret = poll(poll_fds.data(), poll_fds.size(), -1);
 
-              if (ret == -1) {
+              if (ret == -1 && !_signal) {
                      std::cerr << "poll() error" << std::endl;
                      break;
               }
@@ -96,9 +96,7 @@ void Server::run(){
                                    int bytes = recv(poll_fds[i].fd, buffer, sizeof(buffer), 0);
 
                                    if (bytes <= 0) {
-                                          std::cout << "Client disconnected of fd: " << poll_fds[i].fd << std::endl;
-                                          close(poll_fds[i].fd);
-                                          poll_fds.erase(poll_fds.begin() + i);
+                                          removeClient(poll_fds[i].fd);
                                           --i;
                                    } else {
                                           buffer[bytes] = '\0';
@@ -108,4 +106,28 @@ void Server::run(){
                      }
               }
        }
+}
+
+
+void Server::removeClient(int clientFd)
+{
+       for (size_t i = 0; i < clients.size(); ++i)
+       {
+              if (clients[i].getFd() == clientFd)
+              {
+                     std::cout << "Removing client with fd: " << clientFd << std::endl;
+                     close(clientFd);
+                     clients.erase(clients.begin() + i);
+                     break;
+              }
+       }
+       for (size_t i = 0; i < poll_fds.size(); ++i)
+       {
+              if (poll_fds[i].fd == clientFd)
+              {
+                     poll_fds.erase(poll_fds.begin() + i);
+                     break;
+              }
+       }
+
 }

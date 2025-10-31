@@ -12,14 +12,16 @@
 #include <unistd.h>
 #include <cstdlib>
 
+
+
 class Server {
     private:
         int _port;
         std::string _password;
-        bool signal;
         int _servSocket;
         std::vector<struct pollfd> poll_fds;
         std::vector<Client> clients; // client tbd later
+        static bool _signal;
         int getPort() const;
 
         
@@ -36,5 +38,6 @@ class Server {
         void run();
         void closeFds();
         void acceptNewConnection();
-        void SignalHandler(int signum);
+        static void SignalHandler(int signum);
+        void removeClient(int clientFd);
 };

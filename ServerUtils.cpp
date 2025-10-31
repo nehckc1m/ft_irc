@@ -1,9 +1,11 @@
 #include "Server.hpp"
 
+bool Server::_signal = false;
+
 void Server::SignalHandler(int signum) {
     if (signum == SIGINT) {
         std::cout << "\nSIGINT received, shutting down server..." << std::endl;
-        signal = true;
+        _signal = true;
     }
 }
 
@@ -15,6 +17,7 @@ void Server::closeFds() {
     }
     if (_servSocket != -1)
     {
+        
         close(_servSocket);
     }
 }
