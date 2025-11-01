@@ -14,6 +14,15 @@ void Channel::addMember(int clientFd) {
     }
 }
 
+void Channel::addOperator(int clientFd) {
+    if (!isMember(clientFd)) 
+        _operators.push_back(clientFd);
+}
+
+bool Channel::isOperator(int clientFd) const {
+    return std::find(_operators.begin(), _operators.end(), clientFd) != _operators.end();
+}
+
 void Channel::removeMember(int clientFd) {
     std::vector<int>::iterator it = std::find(_members.begin(), _members.end(), clientFd);
     if (it != _members.end()) {

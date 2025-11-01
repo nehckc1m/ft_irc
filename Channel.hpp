@@ -12,8 +12,10 @@ class Channel {
         ~Channel();
 
         void addMember(int clientFd);
+        void addOperator(int clientFd);
         void removeMember(int clientFd);
         bool isMember(int clientFd) const;
+        bool isOperator(int clientFd) const;
 
         void setTopic(const std::string &topic);
         void setPassword(const std::string &password);
