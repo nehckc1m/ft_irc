@@ -1,6 +1,6 @@
 #include "Channel.hpp"
 
-Channel::Channel(const std::string &name) : _name(name), _topic (""), _password("") {
+Channel::Channel(const std::string &name) : _name(name), _topic (""), _password(""), _inviteOnly(false), _moderated(false), _userLimit(0){
     std::cout << "Channel " << name << " created." << std::endl;
 }
 
@@ -15,7 +15,7 @@ void Channel::addMember(int clientFd) {
 }
 
 void Channel::addOperator(int clientFd) {
-    if (!isMember(clientFd)) 
+    if (!isOperator(clientFd)) 
         _operators.push_back(clientFd);
 }
 
@@ -28,6 +28,10 @@ void Channel::removeMember(int clientFd) {
     if (it != _members.end()) {
         _members.erase(it);
     }
+}
+
+void Channel::toggleTopic() {
+    _topicRestricted = !_topicRestricted;
 }
 
 
@@ -62,5 +66,6 @@ void Channel::setPassword(const std::string &password) {
 }
 
 void Channel::setTopic(const std::string &topic) {
-    _topic = topic;
+    if(!_topicRestricted)
+        _topic = topic;
 }

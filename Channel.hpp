@@ -23,7 +23,7 @@ class Channel {
         void setModerated(bool moderated);
         void setUserLimit(size_t limit);
         void removePassword();
-        
+        void toggleTopic()
 
         const std::string &getName() const;
         const std::string &getTopic() const;
@@ -32,11 +32,13 @@ class Channel {
         std::string _name;
         std::string _topic;
         std::string _password;
-
         std::vector<int> _operators; // Store client file descriptors of channel operators
         std::vector<int> _members; // Store client file descriptors of members
+        
         bool _inviteOnly;
         bool _moderated;
+        bool _topicRestricted;
+
         size_t _userLimit;
 
 
