@@ -22,7 +22,7 @@ class Server {
         int _servSocket;
         std::vector<struct pollfd> poll_fds;
         std::vector<Client> clients; // client tbd later
-        std::vector<Channel> channels; // channel tbd later
+        //std::vector<Channel> channels; // channel tbd later
         static bool _signal;
         int getPort() const;
 

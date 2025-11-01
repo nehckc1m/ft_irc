@@ -17,3 +17,7 @@ int Client::getFd() const {
 std::string Client::getIpAddress() const {
     return _ipAddress;
 }
+
+void Client::setNickname(const std::string &nickname) {
+    _nickname = nickname;
+}

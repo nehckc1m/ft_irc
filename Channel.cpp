@@ -20,3 +20,38 @@ void Channel::removeMember(int clientFd) {
         _members.erase(it);
     }
 }
+
+
+bool Channel::isMember(int clientFd) const {
+    return std::find(_members.begin(), _members.end(), clientFd) != _members.end();
+}
+const std::vector<int> &Channel::getMembers() const {
+    return _members;
+}
+const std::string &Channel::getName() const {
+    return _name;
+}
+
+void Channel::removePassword() {
+    _password.clear();
+}
+
+void Channel::setInviteOnly(bool inviteOnly) {
+    _inviteOnly = inviteOnly;
+}
+
+void Channel::setModerated(bool moderated) {
+    _moderated = moderated;
+}
+
+void Channel::setUserLimit(size_t limit) {
+    _userLimit = limit;
+}
+
+void Channel::setPassword(const std::string &password) {
+    _password = password;
+}
+
+void Channel::setTopic(const std::string &topic) {
+    _topic = topic;
+}

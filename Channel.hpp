@@ -20,6 +20,8 @@ class Channel {
         void setInviteOnly(bool inviteOnly);
         void setModerated(bool moderated);
         void setUserLimit(size_t limit);
+        void removePassword();
+        
 
         const std::string &getName() const;
         const std::string &getTopic() const;
