@@ -5,6 +5,8 @@ SRCS= main.cpp \
 	  Server.cpp \
 	  ServerUtils.cpp \
 	  Client.cpp \
+	  Channel.cpp \
+	  Commands.cpp
 
 
 
@@ -28,4 +30,5 @@ clean:
 fclean: clean
 	rm -f $(NAME)
 re: fclean all
+
 .PHONY: all clean fclean re

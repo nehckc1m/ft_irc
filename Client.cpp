@@ -2,7 +2,7 @@
 #include "Client.hpp"
 
 Client::Client(int socketFd)
-    : _fd(socketFd), _nickname(""), _username(""), _isAuthenticated(false) {
+    : _fd(socketFd), _nickname(""), _username(""), _authenticated(false) {
     // Additional initialization if needed
 }
 
@@ -20,4 +20,8 @@ std::string Client::getIpAddress() const {
 
 void Client::setNickname(const std::string &nickname) {
     _nickname = nickname;
+}
+
+void Client::setAuthenticate() {
+    _authenticated = true;
 }

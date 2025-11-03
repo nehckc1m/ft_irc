@@ -94,23 +94,21 @@ void Server::run(){
                             } else {
                                    char buffer[1024];
                                    int bytes = recv(poll_fds[i].fd, buffer, sizeof(buffer), 0);
-
+                                   if (bytes >= 1)
+                                          processBuffer(poll_fds[i].fd, buffer, bytes);
                                    if (bytes <= 0) {
                                           removeClient(poll_fds[i].fd);
                                           --i;
-                                   } else {
-                                          buffer[bytes] = '\0';
-                                          std::cout << "Received from fd " << poll_fds[i].fd << ": " << buffer << std::endl;
                                    }
-                            }
                      }
               }
        }
+       }
 }
-
 
 void Server::removeClient(int clientFd)
 {
+       clientBuffers.erase(clientFd);
        for (size_t i = 0; i < clients.size(); ++i)
        {
               if (clients[i].getFd() == clientFd)

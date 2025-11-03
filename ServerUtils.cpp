@@ -9,6 +9,43 @@ void Server::SignalHandler(int signum) {
     }
 }
 
+
+void Server::processBuffer(int clientFd, char *buffer, int bytes) {
+    clientBuffers[clientFd] += std::string(buffer, bytes);
+    std::string &clientBuffer = clientBuffers[clientFd];
+    size_t pos;
+
+    while ((pos = clientBuffer.find('\n')) != std::string::npos) {
+        std::string command = clientBuffer.substr(0, pos);
+        clientBuffer.erase(0, pos + 1);
+        if (!command.empty() && command[command.size() - 1] == '\r') {
+            command.erase(command.size() - 1); // Remove trailing '\r' if present
+        }
+        // Here you would handle the command, e.g., call server.handleCommand(clientFd, command);
+        handleCommand(clientFd, command);
+    }
+}
+
+void Server::handleCommand(int clientFd, const std::string &command) {
+    // Placeholder for command handling logic
+    size_t pos;
+    pos = command.find(' ');
+    std::string cmd = command;
+    std::string params = "";
+    params = cmd.substr(pos + 1);
+    cmd = cmd.substr(0, pos);
+    if (cmd == "JOIN") {
+        // Handle JOIN command
+    } else if (cmd == "PART") {
+        // Handle PART command
+    }
+    else if (cmd == "PASS") {
+        PASS(clientFd, params);
+    }
+    
+    std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
+}
+
 void Server::closeFds() {
     for (size_t i = 0; i < clients.size(); i++)
     {
@@ -24,4 +61,8 @@ void Server::closeFds() {
 
 int Server::getPort() const {
     return _port;
+}
+
+void Server::sendMessage(int clientFd, const std::string &message) {
+    send(clientFd, message.c_str(), message.length(), 0);
 }

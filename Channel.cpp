@@ -66,6 +66,5 @@ void Channel::setPassword(const std::string &password) {
 }
 
 void Channel::setTopic(const std::string &topic) {
-    if(!_topicRestricted)
-        _topic = topic;
+    _topic = topic;
 }

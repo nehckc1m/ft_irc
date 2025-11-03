@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Client.hpp"
+#include <map>
 #include <string>
 #include <vector>
 #include <sys/socket.h>
@@ -22,9 +23,11 @@ class Server {
         int _servSocket;
         std::vector<struct pollfd> poll_fds;
         std::vector<Client> clients; // client tbd later
-        //std::vector<Channel> channels; // channel tbd later
+        std::vector<Channel> channels; // channel tbd later
+        std::map<int, std::string> clientBuffers; // Buffer for each client
         static bool _signal;
         int getPort() const;
+        void sendMessage(int clientFd, const std::string &message);
 
         
     public:
@@ -33,6 +36,8 @@ class Server {
 
         //std::string getAddress() const;
         //int getPort() const;
+        void handleCommand(int clientFd, const std::string &command);
+        void processBuffer(int clientFd, char *buffer, int bytes);
         void createSocket();
         int initSocket();
         void bindAndListen(int socket);
@@ -42,4 +47,7 @@ class Server {
         void acceptNewConnection();
         static void SignalHandler(int signum);
         void removeClient(int clientFd);
+
+        //COMMAND HANDLERS
+        void PASS(int clientFd, const std::string &params);
 };

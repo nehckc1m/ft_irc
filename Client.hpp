@@ -12,6 +12,8 @@ class Client {
         std::string getNickname() const ;
         std::string getIpAddress() const ;
         void setNickname(const std::string &nickname);
+        void setAuthenticate();
+        bool isAuthenticated() const ;
 
     private:
         int _fd;
@@ -19,5 +21,5 @@ class Client {
         std::string _username;
         std::string _ipAddress;
         std::vector<std::string> _channels;
-        bool _isAuthenticated;
+        bool _authenticated;
 };

@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
+#include <iostream>
 
 
 class Channel {
@@ -23,11 +25,17 @@ class Channel {
         void setModerated(bool moderated);
         void setUserLimit(size_t limit);
         void removePassword();
-        void toggleTopic()
+        void toggleTopic();
 
         const std::string &getName() const;
         const std::string &getTopic() const;
         const std::vector<int> &getMembers() const;
+        const std::string &getPassword() const ;
+        bool getInviteOnly() const ;
+        bool getModerated() const ;
+        size_t getUserLimit() const ;
+        bool getTopicRestricted() const ;
+        const std::vector<int> &getOperators() const ;
     private:
         std::string _name;
         std::string _topic;
