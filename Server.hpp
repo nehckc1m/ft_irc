@@ -28,6 +28,7 @@ class Server {
         static bool _signal;
         int getPort() const;
         void sendMessage(int clientFd, const std::string &message);
+        Client &getClientByFd(int clientFd);
 
         
     public:
@@ -50,4 +51,5 @@ class Server {
 
         //COMMAND HANDLERS
         void PASS(int clientFd, const std::string &params);
+        void JOIN(int clientFd, const std::string &params);
 };

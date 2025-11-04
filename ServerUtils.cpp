@@ -26,6 +26,15 @@ void Server::processBuffer(int clientFd, char *buffer, int bytes) {
     }
 }
 
+Client &Server::getClientByFd(int clientFd) {
+    for (size_t i = 0; i < clients.size(); ++i) {
+        if (clients[i].getFd() == clientFd) {
+            return clients[i];
+        }
+    }
+    throw std::runtime_error("Client not found.");
+}
+
 void Server::handleCommand(int clientFd, const std::string &command) {
     // Placeholder for command handling logic
     size_t pos;
@@ -35,7 +44,7 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
     if (cmd == "JOIN") {
-        // Handle JOIN command
+        JOIN(clientFd, params);
     } else if (cmd == "PART") {
         // Handle PART command
     }

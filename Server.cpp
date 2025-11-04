@@ -100,9 +100,9 @@ void Server::run(){
                                           removeClient(poll_fds[i].fd);
                                           --i;
                                    }
+                            }
                      }
               }
-       }
        }
 }
 

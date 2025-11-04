@@ -5,7 +5,7 @@ Channel::Channel(const std::string &name) : _name(name), _topic (""), _password(
 }
 
 Channel::~Channel() {
-    std::cout << "Channel " << _name << " destroyed." << std::endl;
+
 }
 
 void Channel::addMember(int clientFd) {
