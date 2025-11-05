@@ -1,0 +1,8 @@
+*.o
+*.out
+*.pdf
+.DS_Store
+obj/
+*.dSYM/
+.vscode/
+ircserv
