@@ -6,7 +6,8 @@ SRCS= main.cpp \
 	  ServerUtils.cpp \
 	  Client.cpp \
 	  Channel.cpp \
-	  Commands.cpp
+	  Commands.cpp \
+	  CommandsUtils.cpp
 
 
 

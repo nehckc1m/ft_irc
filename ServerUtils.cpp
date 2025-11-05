@@ -36,13 +36,16 @@ Client &Server::getClientByFd(int clientFd) {
 }
 
 void Server::handleCommand(int clientFd, const std::string &command) {
-    // Placeholder for command handling logic
     size_t pos;
     pos = command.find(' ');
     std::string cmd = command;
     std::string params = "";
-    params = cmd.substr(pos + 1);
+    if (pos != std::string::npos)
+        params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
+    Client &client = getClientByFd(clientFd);
+    if (!check_authentication(client, cmd))
+        return;
     if (cmd == "JOIN") {
         JOIN(clientFd, params);
     } else if (cmd == "PART") {
@@ -50,6 +53,12 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     }
     else if (cmd == "PASS") {
         PASS(clientFd, params);
+    }
+    else if (cmd == "PRIVMSG") {
+        PRVMSG(clientFd, params);
+    }
+    else if (cmd == "TOPIC") {
+        TOPIC(clientFd, params);
     }
     
     std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;

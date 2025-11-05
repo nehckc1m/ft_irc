@@ -11,6 +11,7 @@ class Client {
         int getFd() const;
         std::string getNickname() const ;
         std::string getIpAddress() const ;
+        std::string getUser() const ;
         void setNickname(const std::string &nickname);
         void setAuthenticate();
         bool isAuthenticated() const ;

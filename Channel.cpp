@@ -1,6 +1,13 @@
 #include "Channel.hpp"
 
-Channel::Channel(const std::string &name) : _name(name), _topic (""), _password(""), _inviteOnly(false), _moderated(false), _userLimit(0){
+Channel::Channel(const std::string &name){
+    _name = name;
+    _topic = "";
+    _password = "";
+    _inviteOnly = false;
+    _moderated = false;
+    _topicRestricted = false;
+    _userLimit = 0;
     std::cout << "Channel " << name << " created." << std::endl;
 }
 
@@ -67,4 +74,19 @@ void Channel::setPassword(const std::string &password) {
 
 void Channel::setTopic(const std::string &topic) {
     _topic = topic;
+}
+
+const std::string &Channel::getTopic() const {
+    return _topic;
+}
+
+bool Channel::getInviteOnly() const {
+    return _inviteOnly;
+}
+bool Channel::getModerated() const {
+    return _moderated;
+}
+
+bool Channel::getTopicRestricted() const {
+    return _topicRestricted;
 }

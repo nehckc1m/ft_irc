@@ -52,4 +52,13 @@ class Server {
         //COMMAND HANDLERS
         void PASS(int clientFd, const std::string &params);
         void JOIN(int clientFd, const std::string &params);
+        void PRVMSG(int clientFd, const std::string &params);
+        void MSG_CHANNEL(int clientFd, const std::string channelName, const std::string message);
+        void MODE(int clientFd, const std::string &params);
+        void TOPIC(int clientFd, const std::string &params);
+
+
+        //UTILITY FUNCTIONS
+        bool isPartOfChannel(int clientFd, const std::string &channelName);
+        int check_authentication(Client &client, std::string cmd);
 };
