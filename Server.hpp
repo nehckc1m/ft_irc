@@ -65,4 +65,5 @@ class Server {
         //UTILITY FUNCTIONS
         bool isPartOfChannel(int clientFd, const std::string &channelName);
         int check_authentication(Client &client, std::string cmd);
+
 };

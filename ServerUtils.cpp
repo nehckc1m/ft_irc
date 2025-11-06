@@ -48,17 +48,19 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     // Client &client = getClientByFd(clientFd);
     // if (!check_authentication(client, cmd))
     //     return;
-    if (cmd == "JOIN") {
-        JOIN(clientFd, params);
-    } else if (cmd == "PART") {
-        PART(clientFd, params);
-    } else if (cmd == "PASS") {
-		PASS(clientFd, params);
-    } else if (cmd == "NICK") {
-		NICK(clientFd, params);
-    } else if (cmd == "USER") {
-		USER(clientFd, params);
-	}
+    std::map<std::string, void (Server::*)(int, const std::string&)> commandMap;
+    commandMap["JOIN"] = &Server::JOIN;
+    commandMap["PART"] = &Server::PART;
+    commandMap["PASS"] = &Server::PASS;
+    commandMap["NICK"] = &Server::NICK;
+    commandMap["USER"] = &Server::USER;
+	commandMap["PRVMSG"] = &Server::PRVMSG;
+	commandMap["MODE"] = &Server::MODE;
+	commandMap["TOPIC"] = &Server::TOPIC;
+    if (commandMap.find(cmd) != commandMap.end()) {
+        (this->*commandMap[cmd])(clientFd, params);
+    }
+
     std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
 }
 
