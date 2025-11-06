@@ -45,13 +45,13 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     if (pos != std::string::npos)
 		params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
-    Client &client = getClientByFd(clientFd);
-    if (!check_authentication(client, cmd))
-        return;
+    // Client &client = getClientByFd(clientFd);
+    // if (!check_authentication(client, cmd))
+    //     return;
     if (cmd == "JOIN") {
         JOIN(clientFd, params);
     } else if (cmd == "PART") {
-        //PART(clientFd, params);
+        PART(clientFd, params);
     } else if (cmd == "PASS") {
 		PASS(clientFd, params);
     } else if (cmd == "NICK") {

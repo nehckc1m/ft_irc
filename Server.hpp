@@ -60,6 +60,7 @@ class Server {
         void TOPIC(int clientFd, const std::string &params);
 		void NICK(int clientFd, const std::string &params);
 		void USER(int clientFd, const std::string &params);
+		void PART(int clientFd, const std::string &params);
 
         //UTILITY FUNCTIONS
         bool isPartOfChannel(int clientFd, const std::string &channelName);

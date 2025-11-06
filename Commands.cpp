@@ -10,7 +10,7 @@ void Server::PASS(int clientFd, const std::string &params) {
     }
 
     if (params == _password) {
-        client.setAuthenticate();
+        // client.setAuthenticate();
         std::cout << "Client " << clientFd << " authenticated successfully." << std::endl;
         sendMessage(clientFd, "Welcome to the IRC server!\r\n");
     }
@@ -165,11 +165,11 @@ void Server::TOPIC(int clientFd, const std::string &params) {
         return sendMessage(clientFd, "ERROR :No such channel\r\n");
     }
 }
+
 void Server::NICK(int clientFd, const std::string &params) {
 	std::cout << "Client " << clientFd << " is attempting to register NICK command with params: " << params << std::endl;
 
 	Reply reply("NICK");
-
 	if (params.empty()) {
 		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
 		sendMessage(clientFd, reply.msg(ERR_NONICKNAMEGIVEN));
@@ -190,6 +190,7 @@ void Server::NICK(int clientFd, const std::string &params) {
 
 	// Setting nickname
 	getClientByFd(clientFd).setNickname(params);
+	getClientByFd(clientFd).setAuthenticate();
 }
 
 // Returns vector of strings created by splitting the string by separator sep
@@ -225,11 +226,11 @@ void Server::USER(int clientFd, const std::string &params) {
 	Client &client = getClientByFd(clientFd);
 
 	// Check if nickname already exists
-	if (client.isAuthenticated()) {
-		std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
-		sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
-		return;
-	}
+	// if (client.isAuthenticated()) {
+	// 	std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
+	// 	sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
+	// 	return;
+	// }
 
 	client.setUsername(args[0]);
 	client.setHostname(args[1]);
@@ -250,3 +251,32 @@ void Server::USER(int clientFd, const std::string &params) {
 	client.setAuthenticate();
 }
 	
+void Server::PART(int clientFd, const std::string &params) {
+    std::cout << "Client " << clientFd << " is attempting to part channel with params: " << params << std::endl;
+
+    if (params.empty()) {
+        sendMessage(clientFd, "ERROR :No channel specified\r\n");
+        return;
+    }
+    if (params[0] != '#') {
+        sendMessage(clientFd, "ERROR :Invalid channel name\r\n");
+        return;
+    }
+	// Check if client is part of the channel
+	if (!isPartOfChannel(clientFd, params)) {
+		sendMessage(clientFd, "ERROR :You are not a member of channel " + params + "\r\n");
+		return;
+	}
+
+    for (size_t i = 0; i < channels.size(); ++i) {
+        std::cout << "Checking existing channel: " << channels[i].getName() << std::endl;
+        if (channels[i].getName() == params) {
+            channels[i].removeMember(clientFd);
+            std::cout << "Client " << clientFd << " parted from existing channel: " << params << std::endl;
+            sendMessage(clientFd, "Parted from channel " + params + "\r\n");
+            return;
+        }
+    }
+    sendMessage(clientFd, "ERROR :No such channel\r\n");
+    return;
+}
