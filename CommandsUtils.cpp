@@ -15,7 +15,7 @@ int Server::check_authentication(Client &client, std::string cmd) {
         sendMessage(client.getFd(), "ERROR :You must authenticate first\r\n");
         return 0;
     }
-    if (client.getUser().empty() && cmd != "USER" && client.isAuthenticated()) {
+    if (client.getUsername().empty() && cmd != "USER" && client.isAuthenticated()) {
         sendMessage(client.getFd(), "ERROR :You must set your username first\r\n");
         return 0;
     }

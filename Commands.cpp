@@ -1,5 +1,5 @@
 #include "Server.hpp"
-
+#include "Reply.hpp"
 
 void Server::PASS(int clientFd, const std::string &params) {
     
@@ -8,7 +8,7 @@ void Server::PASS(int clientFd, const std::string &params) {
         sendMessage(clientFd, "ERROR :You are already authenticated\r\n");
         return;
     }
-    
+
     if (params == _password) {
         client.setAuthenticate();
         std::cout << "Client " << clientFd << " authenticated successfully." << std::endl;
@@ -165,3 +165,88 @@ void Server::TOPIC(int clientFd, const std::string &params) {
         return sendMessage(clientFd, "ERROR :No such channel\r\n");
     }
 }
+void Server::NICK(int clientFd, const std::string &params) {
+	std::cout << "Client " << clientFd << " is attempting to register NICK command with params: " << params << std::endl;
+
+	Reply reply("NICK");
+
+	if (params.empty()) {
+		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_NONICKNAMEGIVEN));
+		return;
+	}
+	// Check if not correct nickname
+	if (params.find(' ') != std::string::npos) {
+		std::cout << reply.msg(ERR_ERRONEUSNICKNAME) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_ERRONEUSNICKNAME));
+		return;
+	}
+	// Check if nickname already exists
+	if (nicknameExists(params)) {
+		std::cout << reply.msg(ERR_NICKNAMEINUSE) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_NICKNAMEINUSE));
+		return;
+	}
+
+	// Setting nickname
+	getClientByFd(clientFd).setNickname(params);
+}
+
+// Returns vector of strings created by splitting the string by separator sep
+std::vector<std::string> split_string(const std::string s, char sep)
+{
+	std::vector<std::string> params;
+	std::istringstream ss(s);
+	std::string buffer;
+	while (std::getline(ss, buffer, sep))
+		params.push_back(buffer);
+	return params;
+}
+
+void Server::USER(int clientFd, const std::string &params) {
+	std::cout << "Client " << clientFd << " is attempting to register USER with params: " << params << std::endl;
+
+	Reply reply("USER");
+
+	if (params.empty()) {
+		std::cout << reply.msg(ERR_NEEDMOREPARAMS) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
+		return;
+	}
+
+	std::vector<std::string> args = split_string(params, ' ');
+
+	if (args.size() < 4) {
+		std::cout << reply.msg(ERR_NEEDMOREPARAMS) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
+		return;
+	}
+
+	Client &client = getClientByFd(clientFd);
+
+	// Check if nickname already exists
+	if (client.isAuthenticated()) {
+		std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
+		return;
+	}
+
+	client.setUsername(args[0]);
+	client.setHostname(args[1]);
+	client.setServername(args[2]);
+
+    std::string realname = args[3];
+    realname.erase(realname.find_last_not_of("\n\r") + 1);
+	if (realname[0] == ':')
+		realname.erase(0,1);
+	else
+	{
+		std::string msg("Error: malformed USER command. Realname must start with ':'");
+		std::cout << msg << std::endl;
+		sendMessage(clientFd, msg + "\r\n");
+		return;
+	}	
+	client.setRealname(realname);
+	client.setAuthenticate();
+}
+	

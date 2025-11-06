@@ -48,6 +48,8 @@ class Server {
         void acceptNewConnection();
         static void SignalHandler(int signum);
         void removeClient(int clientFd);
+		bool nicknameExists(const std::string &nickname) const;
+
 
         //COMMAND HANDLERS
         void PASS(int clientFd, const std::string &params);
@@ -56,7 +58,8 @@ class Server {
         void MSG_CHANNEL(int clientFd, const std::string channelName, const std::string message);
         void MODE(int clientFd, const std::string &params);
         void TOPIC(int clientFd, const std::string &params);
-
+		void NICK(int clientFd, const std::string &params);
+		void USER(int clientFd, const std::string &params);
 
         //UTILITY FUNCTIONS
         bool isPartOfChannel(int clientFd, const std::string &channelName);

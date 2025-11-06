@@ -6,9 +6,11 @@ void Server::SignalHandler(int signum) {
     if (signum == SIGINT) {
         std::cout << "\nSIGINT received, shutting down server..." << std::endl;
         _signal = true;
-    }
+    } else if (signum == SIGQUIT) {
+		std::cerr << "\nSIGQUIT received, shutting down server..." << std::endl;
+		_signal = true;
+	}
 }
-
 
 void Server::processBuffer(int clientFd, char *buffer, int bytes) {
     clientBuffers[clientFd] += std::string(buffer, bytes);
@@ -41,7 +43,7 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     std::string cmd = command;
     std::string params = "";
     if (pos != std::string::npos)
-        params = cmd.substr(pos + 1);
+		params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
     Client &client = getClientByFd(clientFd);
     if (!check_authentication(client, cmd))
@@ -49,18 +51,14 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     if (cmd == "JOIN") {
         JOIN(clientFd, params);
     } else if (cmd == "PART") {
-        // Handle PART command
-    }
-    else if (cmd == "PASS") {
-        PASS(clientFd, params);
-    }
-    else if (cmd == "PRIVMSG") {
-        PRVMSG(clientFd, params);
-    }
-    else if (cmd == "TOPIC") {
-        TOPIC(clientFd, params);
-    }
-    
+        //PART(clientFd, params);
+    } else if (cmd == "PASS") {
+		PASS(clientFd, params);
+    } else if (cmd == "NICK") {
+		NICK(clientFd, params);
+    } else if (cmd == "USER") {
+		USER(clientFd, params);
+	}
     std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
 }
 
@@ -83,4 +81,12 @@ int Server::getPort() const {
 
 void Server::sendMessage(int clientFd, const std::string &message) {
     send(clientFd, message.c_str(), message.length(), 0);
+}
+
+bool Server::nicknameExists(const std::string &nickname) const
+{
+	for (std::vector<Client>::const_iterator it = clients.begin(); it != clients.end(); ++it)
+		if (it->getNickname() == nickname)
+			return true;
+	return false;
 }

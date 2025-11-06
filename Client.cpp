@@ -20,8 +20,22 @@ std::string Client::getIpAddress() const {
     return _ipAddress;
 }
 
-std::string Client::getUser() const {
-    return _username;
+std::string Client::getUsername() const {
+	return _username;
+}
+
+std::string Client::getRealname() const {
+	return _realname;
+}
+
+std::string Client::getHostname() const
+{
+	return _hostname;
+}
+
+std::string Client::getServername() const
+{
+	return _servername;
 }
 
 void Client::setNickname(const std::string &nickname) {
@@ -29,6 +43,7 @@ void Client::setNickname(const std::string &nickname) {
 }
 
 void Client::setAuthenticate() {
+	std::cout << "setAuthenticate";
     _authenticated = true;
 }
 
@@ -38,4 +53,21 @@ std::string Client::getNickname() const {
 
 bool Client::isAuthenticated() const {
     return _authenticated;
+}
+void Client::setUsername(const std::string &username) {
+	_username = username;
+}
+
+void Client::setRealname(const std::string &realname) {
+	_realname = realname;
+}
+
+void Client::setHostname(const std::string &hostname)
+{
+	_hostname = hostname;
+}
+
+void Client::setServername(const std::string &servername)
+{
+	_servername = servername;
 }
