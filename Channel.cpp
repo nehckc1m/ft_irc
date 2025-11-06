@@ -8,6 +8,7 @@ Channel::Channel(const std::string &name){
     _moderated = false;
     _topicRestricted = false;
     _userLimit = 0;
+	_operators = std::vector<int>();
     std::cout << "Channel " << name << " created." << std::endl;
 }
 
@@ -60,6 +61,21 @@ void Channel::setInviteOnly(bool inviteOnly) {
     _inviteOnly = inviteOnly;
 }
 
+void Channel::setOperator(int clientFd) {
+	if (clientFd == -1)
+		return;
+	if (!isOperator(clientFd))
+		_operators.push_back(clientFd);
+
+}
+
+void Channel::removeOperator(int clientFd) {
+	std::vector<int>::iterator it = std::find(_operators.begin(), _operators.end(), clientFd);
+	if (it != _operators.end()) {
+		_operators.erase(it);
+	}
+}
+
 void Channel::setModerated(bool moderated) {
     _moderated = moderated;
 }
@@ -89,4 +105,13 @@ bool Channel::getModerated() const {
 
 bool Channel::getTopicRestricted() const {
     return _topicRestricted;
+}
+size_t Channel::getUserLimit() const {
+	return _userLimit;
+}
+const std::string &Channel::getPassword() const {
+	return _password;
+}
+const std::vector<int> &Channel::getOperators() const {
+	return _operators;
 }

@@ -130,3 +130,11 @@ void Server::removeClient(int clientFd)
        }
 
 }
+
+int Server::getClientFdByNickname(const std::string &nickname) const {
+	for (size_t i = 0; i < clients.size(); ++i) {
+		if (clients[i].getNickname() == nickname)
+			return clients[i].getFd();
+	}
+	return -1; // not found
+}

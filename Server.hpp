@@ -49,6 +49,7 @@ class Server {
         static void SignalHandler(int signum);
         void removeClient(int clientFd);
 		bool nicknameExists(const std::string &nickname) const;
+		int getClientFdByNickname(const std::string &nickname) const;
 
 
         //COMMAND HANDLERS

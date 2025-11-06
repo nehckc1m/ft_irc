@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Reply.hpp"
+#include <cstdlib>
 
 void Server::PASS(int clientFd, const std::string &params) {
     
@@ -109,8 +110,94 @@ void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::
 }
 
 void Server::MODE(int clientFd, const std::string &params) {
-    // Placeholder for MODE command handling logic
-    sendMessage(clientFd, "MODE command received with params: " + params + "\r\n");
+    std::cout << "Client " << clientFd << " is attempting to change mode with params: " << params << std::endl;
+
+    if (params.empty()) {
+        sendMessage(clientFd, "ERROR :No channel specified\r\n");
+        return;
+    }
+    if (params[0] != '#') {
+        sendMessage(clientFd, "ERROR :Invalid channel name\r\n");
+        return;
+    }
+	std::string channelName = params;
+	std::string modeChanges;
+	size_t spacePos = params.find(' ');
+	if (spacePos != std::string::npos) {
+		channelName = params.substr(0, spacePos);
+		modeChanges = params.substr(spacePos + 1);
+	}
+
+	for (size_t i = 0; i < channels.size(); ++i) {
+		if (channels[i].getName() == channelName) {
+			if (!isPartOfChannel(clientFd, channelName)) {
+				sendMessage(clientFd, "ERROR :You are not a member of channel " + channelName + "\r\n");
+				return;
+			}
+			// For simplicity, we just acknowledge the mode change without actually changing anything
+			if (!modeChanges.empty()) {
+				if (!channels[i].isOperator(clientFd)) {
+					sendMessage(clientFd, "ERROR :You are not a channel operator\r\n");
+					return;
+				}
+			
+				if (modeChanges[0] == '+') {
+					if (modeChanges == "+t") {
+						channels[i].toggleTopic();
+					}
+					if (modeChanges == "+o") {
+						std::string targetNick = modeChanges.substr(3); 
+						// Assuming format is +o <nick>
+						if (targetNick.empty()) {
+							sendMessage(clientFd, "ERROR :No nickname specified for operator mode\r\n");
+							return;
+						}
+						
+						int targetFd = getClientFdByNickname(targetNick);
+						channels[i].addOperator(targetFd);
+					}
+					if (modeChanges == "+i") {
+						channels[i].setInviteOnly(true);
+					}
+					if (modeChanges == "+k") {
+						std::string password = modeChanges.substr(3); // Assuming format is +k <password>
+						channels[i].setPassword(password);
+					}
+					if (modeChanges[1] == 'l') {
+						size_t limitPos = modeChanges.find(' ', 2);
+						if (limitPos != std::string::npos) {
+							std::string limitValue = modeChanges.substr(limitPos + 1);
+							int limit = std::atoi(limitValue.c_str());
+							channels[i].setUserLimit(limit);
+						}
+					}
+
+				} else if (modeChanges[0] == '-') {
+					if (modeChanges == "-t") {
+						channels[i].toggleTopic();
+					}
+					if (modeChanges == "-o") {
+						channels[i].removeOperator(clientFd);
+					}
+					if (modeChanges == "-i") {
+						channels[i].setInviteOnly(false);
+					}
+					if (modeChanges == "-k") {
+						channels[i].removePassword();
+					}
+					if (modeChanges == "-l") {
+						channels[i].setUserLimit(0); // Remove user limit
+					}
+				}
+
+				sendMessage(clientFd, "Mode for " + channelName + " changed: " + modeChanges + "\r\n");
+			} else {
+				sendMessage(clientFd, "Current mode for " + channelName + ": [modes not implemented]\r\n");
+			}
+			return;
+		}
+	}
+	sendMessage(clientFd, "ERROR :No such channel\r\n");
 }
 
 void Server::TOPIC(int clientFd, const std::string &params) {
