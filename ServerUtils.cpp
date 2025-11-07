@@ -54,7 +54,7 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     commandMap["PASS"] = &Server::PASS;
     commandMap["NICK"] = &Server::NICK;
     commandMap["USER"] = &Server::USER;
-	commandMap["PRVMSG"] = &Server::PRVMSG;
+	commandMap["PRIVMSG"] = &Server::PRIVMSG;
 	commandMap["MODE"] = &Server::MODE;
 	commandMap["TOPIC"] = &Server::TOPIC;
     if (commandMap.find(cmd) != commandMap.end()) {
