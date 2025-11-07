@@ -256,7 +256,7 @@ void Server::TOPIC(int clientFd, const std::string &params) {
 void Server::NICK(int clientFd, const std::string &params) {
 	std::cout << "Client " << clientFd << " is attempting to register NICK command with params: " << params << std::endl;
 
-	Reply reply("NICK");
+	Reply reply("NICK", getClientByFd(clientFd));
 	if (params.empty()) {
 		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
 		sendMessage(clientFd, reply.msg(ERR_NONICKNAMEGIVEN));
@@ -294,13 +294,9 @@ std::vector<std::string> split_string(const std::string s, char sep)
 void Server::USER(int clientFd, const std::string &params) {
 	std::cout << "Client " << clientFd << " is attempting to register USER with params: " << params << std::endl;
 
-	Reply reply("USER");
+	Client &client = getClientByFd(clientFd);
 
-	if (params.empty()) {
-		std::cout << reply.msg(ERR_NEEDMOREPARAMS) << std::endl;
-		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
-		return;
-	}
+	Reply reply("USER", client);
 
 	std::vector<std::string> args = split_string(params, ' ');
 
@@ -310,20 +306,15 @@ void Server::USER(int clientFd, const std::string &params) {
 		return;
 	}
 
-	Client &client = getClientByFd(clientFd);
-
-	// Check if nickname already exists
-	// if (client.isAuthenticated()) {
-	// 	std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
-	// 	sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
-	// 	return;
-	// }
-
+	if (!client.getUsername().empty() || !client.getRealname().empty()) {
+		std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
+		return;
+	}
 	client.setUsername(args[0]);
 	client.setHostname(args[1]);
 	client.setServername(args[2]);
-
-    std::string realname = args[3];
+	std::string realname = args[3];
     realname.erase(realname.find_last_not_of("\n\r") + 1);
 	if (realname[0] == ':')
 		realname.erase(0,1);
@@ -335,7 +326,6 @@ void Server::USER(int clientFd, const std::string &params) {
 		return;
 	}	
 	client.setRealname(realname);
-	client.setAuthenticate();
 }
 	
 void Server::PART(int clientFd, const std::string &params) {

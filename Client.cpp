@@ -3,8 +3,9 @@
 
 Client::Client(int socketFd){
     _fd = socketFd;
-    _authenticated = false;
     _nickname = "";
+	_username = "";
+	_realname = "";
     _authenticated = false;
 }
 

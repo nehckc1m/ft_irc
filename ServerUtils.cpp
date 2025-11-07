@@ -59,7 +59,11 @@ void Server::handleCommand(int clientFd, const std::string &command) {
 	commandMap["TOPIC"] = &Server::TOPIC;
     if (commandMap.find(cmd) != commandMap.end()) {
         (this->*commandMap[cmd])(clientFd, params);
-    }
+    } else {
+		Reply reply(cmd, getClientByFd(clientFd));
+		std::cout << reply.msg(ERR_UNKNOWNCOMMAND) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_UNKNOWNCOMMAND));
+	}
 
     std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
 }

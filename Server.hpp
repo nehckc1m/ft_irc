@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Client.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -12,6 +11,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <cstdlib>
+#include "Reply.hpp"
+#include "Client.hpp"
 #include "Channel.hpp"
 
 
