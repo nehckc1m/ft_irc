@@ -60,8 +60,11 @@ class Server {
         void TOPIC(int clientFd, const std::string &params);
 		void NICK(int clientFd, const std::string &params);
 		void USER(int clientFd, const std::string &params);
+        void KICK(int clientFd, const std::string &params);
+        void INVITE(int clientFd, const std::string &params);
 
         //UTILITY FUNCTIONS
         bool isPartOfChannel(int clientFd, const std::string &channelName);
         int check_authentication(Client &client, std::string cmd);
+        int getFdByNickname(const std::string &nickname);
 };

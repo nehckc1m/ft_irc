@@ -17,20 +17,17 @@ class Client {
 		std::string getServername() const ;
         void setNickname(const std::string &nickname);
 		void setUsername(const std::string &username);
-		void setRealname(const std::string &realname);
-		void setHostname(const std::string &hostname);
-		void setServername(const std::string &servername);
         void setAuthenticate();
         bool isAuthenticated() const ;
+       /* void queueMessage(const std::string &message);
+        std::string &getSendBuffer();
+        bool hasPendingMessages() const ;*/ //TBD
 
     private:
         int _fd;
         std::string _nickname;
         std::string _username;
-		std::string _realname;
-		std::string _hostname;
-		std::string _servername;
-        std::string _ipAddress;
         std::vector<std::string> _channels;
+        std::string _sendBuffer;
         bool _authenticated;
 };

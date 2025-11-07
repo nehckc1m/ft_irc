@@ -48,6 +48,7 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     Client &client = getClientByFd(clientFd);
     if (!check_authentication(client, cmd))
         return;
+    std::cout << "Received command: " << cmd << " with params: " << params << " from client fd: " << clientFd << std::endl;
     if (cmd == "JOIN") {
         JOIN(clientFd, params);
     } else if (cmd == "PART") {
@@ -59,7 +60,21 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     } else if (cmd == "USER") {
 		USER(clientFd, params);
 	}
-    std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
+    else if (cmd == "PRIVMSG") {
+        PRVMSG(clientFd, params);
+    } else if (cmd == "MODE") {
+        MODE(clientFd, params);
+    } else if (cmd == "TOPIC") {
+        TOPIC(clientFd, params);
+    } else if (cmd == "KICK") {
+        KICK(clientFd, params);
+    } else if (cmd == "INVITE") {
+        INVITE(clientFd, params);
+    } else {
+        sendMessage(clientFd, "ERROR :Unknown command\r\n");
+    }
+    
+    //std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
 }
 
 void Server::closeFds() {
