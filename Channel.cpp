@@ -4,16 +4,38 @@ Channel::Channel(const std::string &name){
     _name = name;
     _topic = "";
     _password = "";
-    _inviteOnly = false;
+    _inviteOnly = true;
     _moderated = false;
     _topicRestricted = false;
+    _protected = false;
     _userLimit = 0;
 	_operators = std::vector<int>();
     std::cout << "Channel " << name << " created." << std::endl;
 }
 
+Channel& Channel::operator=(const Channel &other) {
+    if (this != &other) {
+        _name = other._name;
+        _topic = other._topic;
+        _password = other._password;
+        _operators = other._operators;
+        _members = other._members;
+        _invitedMembers = other._invitedMembers;
+        _inviteOnly = other._inviteOnly;
+        _moderated = other._moderated;
+        _topicRestricted = other._topicRestricted;
+        _protected = other._protected;
+        _userLimit = other._userLimit;
+    }
+    return *this;
+}
+
 Channel::~Channel() {
 
+}
+
+bool Channel::isInvited(int clientFd) const {
+    return std::find(_invitedMembers.begin(), _invitedMembers.end(), clientFd) != _invitedMembers.end();
 }
 
 void Channel::addMember(int clientFd) {
@@ -38,10 +60,19 @@ void Channel::removeMember(int clientFd) {
     }
 }
 
+void Channel::addInvitedMember(int clientFd) {
+    if (!isMember(clientFd)) {
+        _invitedMembers.push_back(clientFd);
+    }
+}
+
+bool Channel::getProtected() const {
+    return _protected;
+}
+
 void Channel::toggleTopic() {
     _topicRestricted = !_topicRestricted;
 }
-
 
 bool Channel::isMember(int clientFd) const {
     return std::find(_members.begin(), _members.end(), clientFd) != _members.end();

@@ -8,6 +8,18 @@ Client::Client(int socketFd){
     _authenticated = false;
 }
 
+/*Client& Client::operator=(const Client &other) {
+    if (this != &other) {
+        _fd = other._fd;
+        _nickname = other._nickname;
+        _username = other._username;
+        _channels = other._channels;
+        _sendBuffer = other._sendBuffer;
+        _authenticated = other._authenticated;
+    }
+    return *this;
+}*/
+
 Client::~Client() {
     // Clean up resources if needed
 }
@@ -16,26 +28,8 @@ int Client::getFd() const {
     return _fd;
 }
 
-std::string Client::getIpAddress() const {
-    return _ipAddress;
-}
-
 std::string Client::getUsername() const {
 	return _username;
-}
-
-std::string Client::getRealname() const {
-	return _realname;
-}
-
-std::string Client::getHostname() const
-{
-	return _hostname;
-}
-
-std::string Client::getServername() const
-{
-	return _servername;
 }
 
 void Client::setNickname(const std::string &nickname) {
@@ -43,7 +37,6 @@ void Client::setNickname(const std::string &nickname) {
 }
 
 void Client::setAuthenticate() {
-	std::cout << "setAuthenticate";
     _authenticated = true;
 }
 
@@ -58,16 +51,17 @@ void Client::setUsername(const std::string &username) {
 	_username = username;
 }
 
-void Client::setRealname(const std::string &realname) {
-	_realname = realname;
+void Client::queueMessage(const std::string &msg) {
+    const size_t MAX_BUFFER = 65536; // 64KB
+    
+    if (_sendBuffer.size() + msg.size() > MAX_BUFFER) {
+        std::cout << "Client " << getFd() << " send buffer overflow!" << std::endl;
+        throw std::runtime_error("Buffer overflow");
+    }
+    _sendBuffer += msg;
 }
 
-void Client::setHostname(const std::string &hostname)
-{
-	_hostname = hostname;
+std::string &Client::getSendBuffer() {
+    return _sendBuffer;
 }
 
-void Client::setServername(const std::string &servername)
-{
-	_servername = servername;
-}

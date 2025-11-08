@@ -10,10 +10,13 @@
 class Channel {
     public:
         Channel(const std::string &name);
+        Channel &operator=(const Channel &other);
         ~Channel();
 
         void addMember(int clientFd);
         void addOperator(int clientFd);
+        void addInvitedMember(int clientFd);
+        bool isInvited(int clientFd) const ;
         void removeMember(int clientFd);
         bool isMember(int clientFd) const;
         bool isOperator(int clientFd) const;
@@ -35,6 +38,7 @@ class Channel {
         bool getModerated() const ;
         size_t getUserLimit() const ;
         bool getTopicRestricted() const ;
+        bool getProtected() const ;
         const std::vector<int> &getOperators() const ;
 		void removeOperator(int clientFd);
     private:
@@ -43,10 +47,12 @@ class Channel {
         std::string _password;
         std::vector<int> _operators; // Store client file descriptors of channel operators
         std::vector<int> _members; // Store client file descriptors of members
-        
+        std::vector<int> _invitedMembers; // Store client file descriptors of invited members
+
         bool _inviteOnly;
         bool _moderated;
         bool _topicRestricted;
+        bool _protected;
 
         size_t _userLimit;
 

@@ -6,8 +6,7 @@ void Server::PASS(int clientFd, const std::string &params) {
     
     Client &client = getClientByFd(clientFd);
     if (client.isAuthenticated()) {
-        sendMessage(clientFd, "ERROR :You are already authenticated\r\n");
-        return;
+        return sendMessage(clientFd, "ERROR :You are already authenticated\r\n");
     }
 
     if (params == _password) {
@@ -23,31 +22,53 @@ void Server::PASS(int clientFd, const std::string &params) {
 
 void Server::JOIN(int clientFd, const std::string &params) {
     std::cout << "Client " << clientFd << " is attempting to join channel with params: " << params << std::endl;
+    bool paramPassword = false;
+    if (params.empty()) 
+        return sendMessage(clientFd, "ERROR :No channel specified\r\n");
 
-    if (params.empty()) {
-        sendMessage(clientFd, "ERROR :No channel specified\r\n");
-        return;
+    if (params[0] != '#') 
+        return sendMessage(clientFd, "ERROR :Invalid channel name\r\n");
+
+    if (params.find(' ') != std::string::npos) {
+        paramPassword = true;
     }
-    if (params[0] != '#') {
-        sendMessage(clientFd, "ERROR :Invalid channel name\r\n");
-        return;
+    std::string channelName;
+    if (paramPassword) {
+        channelName = params.substr(0, params.find(' '));
+    } else {
+        channelName = params;
     }
 
     for (size_t i = 0; i < channels.size(); ++i) {
         std::cout << "Checking existing channel: " << channels[i].getName() << std::endl;
-        if (channels[i].getName() == params) {
+        if (channels[i].getName() == channelName) {
+            if (isPartOfChannel(clientFd, channelName)) {
+                return sendMessage(clientFd, "ERROR :You are already a member of channel " + channelName + "\r\n");
+            }
+            if (channels[i].getProtected()){
+                std::cout << "Channel " << params << " is protected. Checking password." << std::endl;
+                size_t spacePos = params.find(' ');
+                std::string channelName = params.substr(0, spacePos);
+                std::string password = params.substr(spacePos + 1); 
+                if (password != channels[i].getPassword())
+                    return sendMessage(clientFd, "ERROR :Cannot join protected channel\r\n");
+            }
+            if (channels[i].getInviteOnly() && !channels[i].isInvited(clientFd)) {
+                std::cout << "Channel " << params << " is invite-only. Checking invitation." << std::endl;
+                return sendMessage(clientFd, "ERROR :Cannot join invite-only channel without invitation\r\n");
+            }
             channels[i].addMember(clientFd);
-            std::cout << "Client " << clientFd << " joined existing channel: " << params << std::endl;
-            sendMessage(clientFd, "Joined channel " + params + "\r\n");
+            std::cout << "Client " << clientFd << " joined existing channel: " << channelName << std::endl;
+            sendMessage(clientFd, "Joined channel " + channelName + "\r\n");
             return;
         }
     }
-    Channel newChannel(params);
-    std::cout << "Creating new channel: " << params << std::endl;
+    Channel newChannel(channelName);
+    std::cout << "Creating new channel: " << channelName << std::endl;
     newChannel.addMember(clientFd);
     newChannel.addOperator(clientFd);
     channels.push_back(newChannel);
-    sendMessage(clientFd, "Joined channel " + params + "\r\n");
+    sendMessage(clientFd, "Joined channel " + channelName + "\r\n");
     return;
 }
 
@@ -84,20 +105,23 @@ void Server::PRVMSG(int clientFd, const std::string &params) {
     }
     if (targetFound) {
         sendMessage(clientFd, "Message sent to " + target + "\r\n");
+        sendMessage(getFdByNickname(target), "FROM " + getClientByFd(clientFd).getNickname() + ": " + message + "\r\n");
     } else {
-        sendMessage(clientFd, "ERROR :No such nick/channel\r\n");
+        sendMessage(clientFd, "ERROR :No such nickname\r\n");
     }
 }
 
 void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::string message) {
-    
+
+    std::cout << "Client " << clientFd << " is sending message to channel " << channelName << ": " << message << std::endl;
+    Client &client = getClientByFd(clientFd);
     for (size_t i = 0; i < channels.size(); ++i) {
         if (channels[i].getName() == channelName) {
-            if (channels[i].isMember(clientFd)) {
+            if (isPartOfChannel(clientFd, channelName)) {
                 const std::vector<int> &members = channels[i].getMembers();
                 for (size_t j = 0; j < members.size(); ++j) {
                     if (members[j] != clientFd) {
-                        sendMessage(members[j], "PRIVMSG " + channelName + ": " + message + "\r\n");
+                        sendMessage(members[j], "FROM " + client.getNickname() + " " + channelName + ": " + message + "\r\n");
                     }
                 }
             } else {
@@ -319,10 +343,6 @@ void Server::USER(int clientFd, const std::string &params) {
 	// 	return;
 	// }
 
-	client.setUsername(args[0]);
-	client.setHostname(args[1]);
-	client.setServername(args[2]);
-
     std::string realname = args[3];
     realname.erase(realname.find_last_not_of("\n\r") + 1);
 	if (realname[0] == ':')
@@ -334,7 +354,6 @@ void Server::USER(int clientFd, const std::string &params) {
 		sendMessage(clientFd, msg + "\r\n");
 		return;
 	}	
-	client.setRealname(realname);
 	client.setAuthenticate();
 }
 	
@@ -366,4 +385,90 @@ void Server::PART(int clientFd, const std::string &params) {
     }
     sendMessage(clientFd, "ERROR :No such channel\r\n");
     return;
+}
+
+void Server::KICK(int clientFd, const std::string &params) {
+    if (params.empty()) {
+        sendMessage(clientFd, "ERROR :No parameters specified for KICK\r\n");
+        return;
+    }
+    Client &client = getClientByFd(clientFd);
+    std::string channelName;
+    std::vector<std::string> tokens = split_string(params, ' ');
+    if (tokens.size() < 2) {
+        sendMessage(clientFd, "ERROR :Not enough parameters for KICK\r\n");
+        return;
+    }
+    channelName = tokens[0];
+    size_t i;
+    for (i = 0; i < channels.size(); ++i) {
+        if (channels[i].getName() == channelName)
+            break;
+    }
+    std::string nickToKick = tokens[1];
+    if (!channels[i].isMember(clientFd)) {
+        sendMessage(clientFd, "ERROR :You are not a member of the channel\r\n");
+        return;
+    }
+    if (!channels[i].isOperator(clientFd)) {
+        sendMessage(clientFd, "ERROR :You are not an operator of the channel\r\n");
+        return;
+    }
+    for (size_t j = 0; j < clients.size(); ++j) {
+        if (clients[j].getNickname() == nickToKick) {
+            int kickFd = clients[j].getFd();
+            if (!channels[i].isMember(kickFd)) {
+                sendMessage(clientFd, "ERROR :User is not a member of the channel\r\n");
+                return;
+            }
+            channels[i].removeMember(kickFd);
+            sendMessage(kickFd, "You have been kicked from " + channelName + " by " + client.getNickname() + "\r\n");
+            sendMessage(clientFd, nickToKick + " has been kicked from " + channelName + "\r\n");
+            return;
+        }
+    }
+}
+
+void Server::INVITE(int clientFd, const std::string &params) {
+    if (params.empty()) {
+        sendMessage(clientFd, "ERROR :No parameters specified for INVITE\r\n");
+        return;
+    }
+    Client &client = getClientByFd(clientFd);
+    std::vector<std::string> tokens = split_string(params, ' ');
+    if (tokens.size() < 2) {
+        sendMessage(clientFd, "ERROR :Not enough parameters for INVITE\r\n");
+        return;
+    }
+    std::string nickToInvite = tokens[1];
+    std::string channelName = tokens[0];
+    std::cout << "INVITE: Client " << clientFd << " is inviting " << nickToInvite << " to channel " << channelName << std::endl;
+    size_t i;
+    for (i = 0; i < channels.size(); ++i) {
+        if (channels[i].getName() == channelName)
+            break;
+    }
+    if (i >= channels.size()) {
+        sendMessage(clientFd, "ERROR :No such channel\r\n");
+        return;
+    }
+    std::cout << "INVITE: Looking for channel " << channels[i].getName() << std::endl;
+    if (isPartOfChannel(clientFd, channelName) == false) {
+        sendMessage(clientFd, "ERROR :You are not a member of the channel\r\n");
+        return;
+    }
+    for (size_t j = 0; j < clients.size(); ++j) {
+        if (clients[j].getNickname() == nickToInvite) {
+            int inviteFd = clients[j].getFd();
+            if (channels[i].isMember(inviteFd)) {
+                sendMessage(clientFd, "ERROR :User is already a member of the channel\r\n");
+                return;
+            }
+            channels[i].addInvitedMember(inviteFd);
+            sendMessage(inviteFd, "You have been invited to " + channelName + " by " + client.getNickname() + "\r\n");
+            sendMessage(clientFd, nickToInvite + " has been invited to " + channelName + "\r\n");
+            return;
+        }
+    }
+    sendMessage(clientFd, "ERROR :No such nickname\r\n");
 }
