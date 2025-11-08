@@ -14,10 +14,9 @@ class Client {
         std::string getIpAddress() const ;
 		std::string getUsername() const ;
 		std::string getRealname() const ;
-		std::string getHostname() const ;
-		std::string getServername() const ;
         void setNickname(const std::string &nickname);
 		void setUsername(const std::string &username);
+		void setRealname(const std::string &realname);
         void setAuthenticate();
         bool isAuthenticated() const ;
         // Message queueing methods
@@ -29,6 +28,8 @@ class Client {
         int _fd;
         std::string _nickname;
         std::string _username;
+		std::string _realname;
+        std::string _ipAddress;
         std::vector<std::string> _channels;
         std::string _sendBuffer;
         bool _authenticated;

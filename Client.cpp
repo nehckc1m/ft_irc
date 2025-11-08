@@ -3,8 +3,9 @@
 
 Client::Client(int socketFd){
     _fd = socketFd;
-    _authenticated = false;
     _nickname = "";
+	_username = "";
+	_realname = "";
     _authenticated = false;
 }
 
@@ -32,11 +33,16 @@ std::string Client::getUsername() const {
 	return _username;
 }
 
+std::string Client::getRealname() const {
+	return _realname;
+}
+
 void Client::setNickname(const std::string &nickname) {
     _nickname = nickname;
 }
 
 void Client::setAuthenticate() {
+	std::cout << "setAuthenticate" << std::endl;
     _authenticated = true;
 }
 

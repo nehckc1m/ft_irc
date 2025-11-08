@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Client.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -13,6 +12,8 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cerrno>
+#include "Reply.hpp"
+#include "Client.hpp"
 #include "Channel.hpp"
 
 
@@ -56,7 +57,7 @@ class Server {
         //COMMAND HANDLERS
         void PASS(int clientFd, const std::string &params);
         void JOIN(int clientFd, const std::string &params);
-        void PRVMSG(int clientFd, const std::string &params);
+        void PRIVMSG(int clientFd, const std::string &params);
         void MSG_CHANNEL(int clientFd, const std::string channelName, const std::string message);
         void MODE(int clientFd, const std::string &params);
         void TOPIC(int clientFd, const std::string &params);

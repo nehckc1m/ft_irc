@@ -72,7 +72,7 @@ void Server::JOIN(int clientFd, const std::string &params) {
     return;
 }
 
-void Server::PRVMSG(int clientFd, const std::string &params) {
+void Server::PRIVMSG(int clientFd, const std::string &params) {
 
     if (params.empty()) {
         sendMessage(clientFd, "ERROR :No target specified\r\n");
@@ -96,16 +96,18 @@ void Server::PRVMSG(int clientFd, const std::string &params) {
     }
     // Target is a user
     std::string message = params.substr(spacePos + 1);
-    bool targetFound = false;
+	if (message[0] == ':')
+		message.erase(0, 1);
+	int targetFd = 0;
     for (size_t i = 0; i < clients.size(); ++i) {
         if (clients[i].getNickname() == target) {
-            targetFound = true;
+			targetFd = clients[i].getFd();
             break;
         }
     }
-    if (targetFound) {
-        sendMessage(clientFd, "Message sent to " + target + "\r\n");
-        sendMessage(getFdByNickname(target), "FROM " + getClientByFd(clientFd).getNickname() + ": " + message + "\r\n");
+    if (targetFd) {
+		std::cout << "Message sent to " + target << std::endl;
+        sendMessage(targetFd, message + "\r\n");
     } else {
         sendMessage(clientFd, "ERROR :No such nickname\r\n");
     }
@@ -280,7 +282,7 @@ void Server::TOPIC(int clientFd, const std::string &params) {
 void Server::NICK(int clientFd, const std::string &params) {
 	std::cout << "Client " << clientFd << " is attempting to register NICK command with params: " << params << std::endl;
 
-	Reply reply("NICK");
+	Reply reply("NICK", getClientByFd(clientFd));
 	if (params.empty()) {
 		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
 		sendMessage(clientFd, reply.msg(ERR_NONICKNAMEGIVEN));
@@ -301,7 +303,6 @@ void Server::NICK(int clientFd, const std::string &params) {
 
 	// Setting nickname
 	getClientByFd(clientFd).setNickname(params);
-	getClientByFd(clientFd).setAuthenticate();
 }
 
 // Returns vector of strings created by splitting the string by separator sep
@@ -318,13 +319,9 @@ std::vector<std::string> split_string(const std::string s, char sep)
 void Server::USER(int clientFd, const std::string &params) {
 	std::cout << "Client " << clientFd << " is attempting to register USER with params: " << params << std::endl;
 
-	Reply reply("USER");
+	Client &client = getClientByFd(clientFd);
 
-	if (params.empty()) {
-		std::cout << reply.msg(ERR_NEEDMOREPARAMS) << std::endl;
-		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
-		return;
-	}
+	Reply reply("USER", client);
 
 	std::vector<std::string> args = split_string(params, ' ');
 
@@ -334,16 +331,13 @@ void Server::USER(int clientFd, const std::string &params) {
 		return;
 	}
 
-	Client &client = getClientByFd(clientFd);
+	if (!client.getUsername().empty() || !client.getRealname().empty()) {
+		std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
+		sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
+		return;
+	}
 
-	// Check if nickname already exists
-	// if (client.isAuthenticated()) {
-	// 	std::cout << reply.msg(ERR_ALREADYREGISTRED) << std::endl;
-	// 	sendMessage(clientFd, reply.msg(ERR_ALREADYREGISTRED));
-	// 	return;
-	// }
-
-    std::string realname = args[3];
+	std::string realname = args[3];
     realname.erase(realname.find_last_not_of("\n\r") + 1);
 	if (realname[0] == ':')
 		realname.erase(0,1);
@@ -354,7 +348,8 @@ void Server::USER(int clientFd, const std::string &params) {
 		sendMessage(clientFd, msg + "\r\n");
 		return;
 	}	
-	client.setAuthenticate();
+	client.setUsername(args[0]);
+	client.setRealname(realname);
 }
 	
 void Server::PART(int clientFd, const std::string &params) {

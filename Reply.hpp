@@ -2,6 +2,7 @@
 
 #include <map>
 #include <sstream>
+#include "Client.hpp"
 
 enum e_reply {
 	// Errors
@@ -9,6 +10,7 @@ enum e_reply {
 	RPL_YOUREOPER = 381,		// USER
 	// Errors
 
+	ERR_UNKNOWNCOMMAND = 421,
 	ERR_NONICKNAMEGIVEN = 431,  // NICK 
 	ERR_ERRONEUSNICKNAME = 432, // NICK
 	ERR_NICKNAMEINUSE =    433,	// NICK
@@ -22,36 +24,11 @@ enum e_reply {
 
 class Reply {
 	std::map<int, std::string> message;
-	std::string client;
 	std::string cmd;
+	Client& client;
+
 public:
-	Reply(const std::string &command);
+	Reply(const std::string &command, Client &c);
 	void init();
 	std::string msg(e_reply code);
 };
-
-std::string Reply::msg(e_reply code)
-{
-	return message[code];
-}
-
-std::string str(int n)
-{
-	std::stringstream ss;
-	ss << n;
-	return ss.str();
-}
-
-void Reply::init()
-{
-	// NICK reply <nick>!<user>@<host>
-	message[RPL_WELCOME] = str(RPL_WELCOME) + " " + cmd + " Welcome to the IRC server!\r\n";
-	message[ERR_NONICKNAMEGIVEN] = str(ERR_NONICKNAMEGIVEN) + " :No nickname given\r\n";
-	message[ERR_ERRONEUSNICKNAME] = str(ERR_ERRONEUSNICKNAME) + " <nick> :Erroneus nickname\r\n";
-	message[ERR_NICKNAMEINUSE] = str(ERR_NICKNAMEINUSE) + " <nick> :Nickname is already in use\r\n";
-
-	message[ERR_NEEDMOREPARAMS] = str(ERR_NEEDMOREPARAMS) + " " + cmd + " :Not enough parameters\r\n";
-	message[ERR_ALREADYREGISTRED] = str(ERR_ALREADYREGISTRED) + " :Unauthorized command (already registered)\r\n";
-}
-
-Reply::Reply(const std::string &cmd) : cmd(cmd) { init(); }
