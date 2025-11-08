@@ -103,6 +103,9 @@ void Server::run(){
                                    }
                             }
                      }
+                     if (poll_fds[i].revents & POLLOUT) {
+                            sendMessage(poll_fds[i].fd, "");
+                     }
               }
        }
 }

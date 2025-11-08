@@ -95,7 +95,36 @@ int Server::getPort() const {
 }
 
 void Server::sendMessage(int clientFd, const std::string &message) {
-    send(clientFd, message.c_str(), message.length(), 0);
+   
+    Client &client = getClientByFd(clientFd);
+    try {
+        client.queueMessage(message);
+    } catch (const std::exception &e) {
+        std::cerr << "Client " << clientFd << " disconnected while sending message." << e.what() << std::endl;
+        removeClient(clientFd);
+        return;
+    }
+    flushSendBuffer(client);
+}
+
+void Server::flushSendBuffer(Client &client) {
+    std::string &buffer = client.getSendBuffer();
+    while (!buffer.empty()) {
+        ssize_t bytesSent = send(client.getFd(), buffer.c_str(), buffer.size(), 0);
+        if (bytesSent > 0){
+            buffer.erase(0, bytesSent);
+        } else if (bytesSent == -1) {
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                enablePollOut(client.getFd());
+                return;
+            } else {
+                std::cerr << "Error sending message to client " << client.getFd() << std::endl;
+                removeClient(client.getFd());
+                return;
+            }
+        }
+    }
+    disablePollOut(client.getFd());
 }
 
 bool Server::nicknameExists(const std::string &nickname) const
@@ -104,4 +133,22 @@ bool Server::nicknameExists(const std::string &nickname) const
 		if (it->getNickname() == nickname)
 			return true;
 	return false;
+}
+
+void Server::enablePollOut(int clientFd) {
+    for (size_t i = 0; i < poll_fds.size(); ++i) {
+        if (poll_fds[i].fd == clientFd) {
+            poll_fds[i].events |= POLLOUT;
+            return;
+        }
+    }
+}
+
+void Server::disablePollOut(int clientFd) {
+    for (size_t i = 0; i < poll_fds.size(); ++i) {
+        if (poll_fds[i].fd == clientFd) {
+            poll_fds[i].events &= ~POLLOUT;
+            return;
+        }
+    }
 }

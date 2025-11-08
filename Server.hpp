@@ -12,6 +12,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <cerrno>
 #include "Channel.hpp"
 
 
@@ -67,4 +68,7 @@ class Server {
         bool isPartOfChannel(int clientFd, const std::string &channelName);
         int check_authentication(Client &client, std::string cmd);
         int getFdByNickname(const std::string &nickname);
+        void flushSendBuffer(Client &client);
+        void enablePollOut(int clientFd);
+        void disablePollOut(int clientFd);
 };
