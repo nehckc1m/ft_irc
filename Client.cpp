@@ -71,3 +71,6 @@ std::string &Client::getSendBuffer() {
     return _sendBuffer;
 }
 
+void Client::setRealname(const std::string &realname) {
+	_realname = realname;
+}

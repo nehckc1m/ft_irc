@@ -57,6 +57,8 @@ void Server::handleCommand(int clientFd, const std::string &command) {
 	commandMap["PRIVMSG"] = &Server::PRIVMSG;
 	commandMap["MODE"] = &Server::MODE;
 	commandMap["TOPIC"] = &Server::TOPIC;
+	commandMap["KICK"] = &Server::KICK;
+	commandMap["INVITE"] = &Server::INVITE;
     if (commandMap.find(cmd) != commandMap.end()) {
         (this->*commandMap[cmd])(clientFd, params);
     } else {
