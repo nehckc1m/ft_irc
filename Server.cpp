@@ -41,7 +41,7 @@ void Server::bindAndListen(int socket) {
 
        if (bind(socket, (struct sockaddr *)&serv_adress, sizeof(serv_adress)) == -1) {
               close(socket);
-              throw std::runtime_error("Failed to bind socket");
+              throw std::runtime_error("Failed to bind socket: " + std::string(std::strerror(errno)));
        }
        if (listen(socket, SOMAXCONN) == -1) {
               close(socket);

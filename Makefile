@@ -34,4 +34,7 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re
+debug: 
+	$(CC) $(CFLAGS) -DDEBUG=1 $(SRCS) -o $(NAME)
+
+.PHONY: all clean fclean re debug

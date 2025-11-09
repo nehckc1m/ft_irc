@@ -12,11 +12,22 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cerrno>
+#include <cstring>
+
 #include "Reply.hpp"
 #include "Client.hpp"
 #include "Channel.hpp"
 
+#define RST  "\033[0m"
+#define GRAY "\033[90m"
+#define P_CYAN "\033[38;5;123m"
 
+#ifndef DEBUG
+# define DEBUG 0
+#endif
+
+// Returns vector of strings created by splitting the string by separator sep
+std::vector<std::string> split_string(const std::string s, char sep);
 
 class Server {
     private:
@@ -66,6 +77,9 @@ class Server {
 		void PART(int clientFd, const std::string &params);
         void KICK(int clientFd, const std::string &params);
         void INVITE(int clientFd, const std::string &params);
+		void PING(int clientFd, const std::string &params);
+		void CAP(int clientFd, const std::string &params);
+		void user_mode(int clientFd, const std::string &params);
 
         //UTILITY FUNCTIONS
         bool isPartOfChannel(int clientFd, const std::string &channelName);

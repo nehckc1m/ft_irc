@@ -12,7 +12,7 @@ void Server::PASS(int clientFd, const std::string &params) {
     if (params == _password) {
         // client.setAuthenticate();
         std::cout << "Client " << clientFd << " authenticated successfully." << std::endl;
-        sendMessage(clientFd, "Welcome to the IRC server!\r\n");
+        //sendMessage(clientFd, "Welcome to the IRC server!\r\n");
     }
     else {
         std::cout << "Client " << clientFd << " provided incorrect password." << std::endl;
@@ -141,17 +141,32 @@ void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::
     sendMessage(clientFd, "ERROR :No such channel\r\n");
 }
 
-void Server::MODE(int clientFd, const std::string &params) {
-    std::cout << "Client " << clientFd << " is attempting to change mode with params: " << params << std::endl;
+void Server::user_mode(int clientFd, const std::string &params) {
+	Reply reply("MODE", getClientByFd(clientFd));
+	std::vector<std::string> args = split_string(params, ' ');
+	if (args.size() != 2) {
+		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
+		return;
+	}
+	if (getClientByFd(clientFd).getNickname() != args[0]) {
+		sendMessage(clientFd, reply.msg(ERR_USERSDONTMATCH));
+		return;
+	}
+}
 
-    if (params.empty()) {
-        sendMessage(clientFd, "ERROR :No channel specified\r\n");
+void Server::MODE(int clientFd, const std::string &params) {
+
+	Reply reply("MODE", getClientByFd(clientFd));
+	if (params.empty()) {
+		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
         return;
     }
+	// User mode not supported and added to remove errors in irssi client when send MODE <nickname> +i
     if (params[0] != '#') {
-        sendMessage(clientFd, "ERROR :Invalid channel name\r\n");
+        user_mode(clientFd, params);
         return;
     }
+	// Channel mode
 	std::string channelName = params;
 	std::string modeChanges;
 	size_t spacePos = params.find(' ');
@@ -289,8 +304,6 @@ void Server::TOPIC(int clientFd, const std::string &params) {
 }
 
 void Server::NICK(int clientFd, const std::string &params) {
-	std::cout << "Client " << clientFd << " is attempting to register NICK command with params: " << params << std::endl;
-
 	Reply reply("NICK", getClientByFd(clientFd));
 	if (params.empty()) {
 		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
@@ -314,20 +327,7 @@ void Server::NICK(int clientFd, const std::string &params) {
 	getClientByFd(clientFd).setNickname(params);
 }
 
-// Returns vector of strings created by splitting the string by separator sep
-std::vector<std::string> split_string(const std::string s, char sep)
-{
-	std::vector<std::string> params;
-	std::istringstream ss(s);
-	std::string buffer;
-	while (std::getline(ss, buffer, sep))
-		params.push_back(buffer);
-	return params;
-}
-
 void Server::USER(int clientFd, const std::string &params) {
-	std::cout << "Client " << clientFd << " is attempting to register USER with params: " << params << std::endl;
-
 	Client &client = getClientByFd(clientFd);
 
 	Reply reply("USER", client);
@@ -359,6 +359,7 @@ void Server::USER(int clientFd, const std::string &params) {
 	}	
 	client.setUsername(args[0]);
 	client.setRealname(realname);
+	sendMessage(clientFd, reply.msg(RPL_WELCOME));
 }
 	
 void Server::PART(int clientFd, const std::string &params) {
@@ -476,3 +477,13 @@ void Server::INVITE(int clientFd, const std::string &params) {
     }
     sendMessage(clientFd, "ERROR :No such nickname\r\n");
 }
+
+void Server::PING(int clientFd, const std::string &params) {
+	sendMessage(clientFd, ":localhost PONG localhost :" + params + "\r\n");
+}
+
+void Server::CAP(int clientFd, const std::string &params) {
+	(void) clientFd;
+	(void) params;
+}
+

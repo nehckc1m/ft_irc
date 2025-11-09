@@ -42,6 +42,7 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     pos = command.find(' ');
     std::string cmd = command;
     std::string params = "";
+	if (DEBUG == 1) std::cout << GRAY << "[" << clientFd << "]" << P_CYAN << command << RST << std::endl;
     if (pos != std::string::npos)
 		params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
@@ -59,15 +60,16 @@ void Server::handleCommand(int clientFd, const std::string &command) {
 	commandMap["TOPIC"] = &Server::TOPIC;
 	commandMap["KICK"] = &Server::KICK;
 	commandMap["INVITE"] = &Server::INVITE;
+	commandMap["PING"] = &Server::PING;
+	commandMap["CAP"] = &Server::CAP;
     if (commandMap.find(cmd) != commandMap.end()) {
+    	std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
         (this->*commandMap[cmd])(clientFd, params);
     } else {
 		Reply reply(cmd, getClientByFd(clientFd));
 		std::cout << reply.msg(ERR_UNKNOWNCOMMAND) << std::endl;
 		sendMessage(clientFd, reply.msg(ERR_UNKNOWNCOMMAND));
 	}
-
-    std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
 }
 
 void Server::closeFds() {
@@ -97,6 +99,7 @@ void Server::sendMessage(int clientFd, const std::string &message) {
         removeClient(clientFd);
         return;
     }
+	if (DEBUG == 1) std::cout << GRAY << "[->" << clientFd << "]" P_CYAN << message << RST <<std::endl;
     flushSendBuffer(client);
 }
 
@@ -144,4 +147,14 @@ void Server::disablePollOut(int clientFd) {
             return;
         }
     }
+}
+
+std::vector<std::string> split_string(const std::string s, char sep)
+{
+	std::vector<std::string> params;
+	std::istringstream ss(s);
+	std::string buffer;
+	while (std::getline(ss, buffer, sep))
+		params.push_back(buffer);
+	return params;
 }
