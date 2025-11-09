@@ -36,6 +36,7 @@ class Channel {
         const std::string &getPassword() const ;
         bool getInviteOnly() const ;
         bool getModerated() const ;
+		unsigned long getLimit() const ;
         size_t getUserLimit() const ;
         bool getTopicRestricted() const ;
         bool getProtected() const ;

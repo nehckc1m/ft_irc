@@ -56,6 +56,11 @@ void Server::JOIN(int clientFd, const std::string &params) {
             if (channels[i].getInviteOnly() && !channels[i].isInvited(clientFd)) {
                 std::cout << "Channel " << params << " is invite-only. Checking invitation." << std::endl;
                 return sendMessage(clientFd, "ERROR :Cannot join invite-only channel without invitation\r\n");
+            } 
+			std::cout << "User limit: " << channels[i].getLimit() << std::endl;
+			if (channels[i].getLimit() > 0 && channels[i].getMembers().size() >= channels[i].getLimit()) {
+                std::cout << "Channel " << params << " is full. Cannot join." << std::endl;
+                return sendMessage(clientFd, "ERROR :Cannot join channel: Channel is full\r\n");
             }
             channels[i].addMember(clientFd);
             std::cout << "Client " << clientFd << " joined existing channel: " << channelName << std::endl;
@@ -105,9 +110,10 @@ void Server::PRIVMSG(int clientFd, const std::string &params) {
             break;
         }
     }
+	
     if (targetFd) {
 		std::cout << "Message sent to " + target << std::endl;
-        sendMessage(targetFd, message + "\r\n");
+        sendMessage(targetFd, "PRIVMSG from " + getClientByFd(clientFd).getNickname() + " :" + message + "\r\n");
     } else {
         sendMessage(clientFd, "ERROR :No such nickname\r\n");
     }
@@ -168,12 +174,11 @@ void Server::MODE(int clientFd, const std::string &params) {
 				}
 			
 				if (modeChanges[0] == '+') {
-					if (modeChanges == "+t") {
+					if (modeChanges[1] == 't') {
 						channels[i].toggleTopic();
 					}
-					if (modeChanges == "+o") {
-						std::string targetNick = modeChanges.substr(3); 
-						// Assuming format is +o <nick>
+					if (modeChanges[1] == 'o') {
+						std::string targetNick = modeChanges.substr(3); // Assuming format is +o <nick>
 						if (targetNick.empty()) {
 							sendMessage(clientFd, "ERROR :No nickname specified for operator mode\r\n");
 							return;
@@ -182,36 +187,40 @@ void Server::MODE(int clientFd, const std::string &params) {
 						int targetFd = getClientFdByNickname(targetNick);
 						channels[i].addOperator(targetFd);
 					}
-					if (modeChanges == "+i") {
+					if (modeChanges[1] == 'i') {
 						channels[i].setInviteOnly(true);
 					}
-					if (modeChanges == "+k") {
+					if (modeChanges[1] == 'k') {
 						std::string password = modeChanges.substr(3); // Assuming format is +k <password>
 						channels[i].setPassword(password);
 					}
 					if (modeChanges[1] == 'l') {
-						size_t limitPos = modeChanges.find(' ', 2);
+						size_t limitPos = modeChanges.find(' ', 2); // Assuming format is +l <limit>
 						if (limitPos != std::string::npos) {
 							std::string limitValue = modeChanges.substr(limitPos + 1);
 							int limit = std::atoi(limitValue.c_str());
-							channels[i].setUserLimit(limit);
+							if (limit > 0) {
+								channels[i].setUserLimit(limit);
+							} else {
+								sendMessage(clientFd, "ERROR :Invalid user limit\r\n");
+							}
 						}
 					}
 
 				} else if (modeChanges[0] == '-') {
-					if (modeChanges == "-t") {
+					if (modeChanges[1] == 't') {
 						channels[i].toggleTopic();
 					}
-					if (modeChanges == "-o") {
+					if (modeChanges[1] == 'o') {
 						channels[i].removeOperator(clientFd);
 					}
-					if (modeChanges == "-i") {
+					if (modeChanges[1] == 'i') {
 						channels[i].setInviteOnly(false);
 					}
-					if (modeChanges == "-k") {
+					if (modeChanges[1] == 'k') {
 						channels[i].removePassword();
 					}
-					if (modeChanges == "-l") {
+					if (modeChanges[1] == 'l') {
 						channels[i].setUserLimit(0); // Remove user limit
 					}
 				}

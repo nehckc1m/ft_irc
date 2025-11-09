@@ -4,7 +4,7 @@ Channel::Channel(const std::string &name){
     _name = name;
     _topic = "";
     _password = "";
-    _inviteOnly = true;
+    _inviteOnly = false;
     _moderated = false;
     _topicRestricted = false;
     _protected = false;
@@ -132,6 +132,10 @@ bool Channel::getInviteOnly() const {
 }
 bool Channel::getModerated() const {
     return _moderated;
+}
+
+unsigned long Channel::getLimit() const {
+	return static_cast<unsigned long>(_userLimit);
 }
 
 bool Channel::getTopicRestricted() const {
