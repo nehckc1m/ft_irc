@@ -45,9 +45,9 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     if (pos != std::string::npos)
 		params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
-    // Client &client = getClientByFd(clientFd);
-    // if (!check_authentication(client, cmd))
-    //     return;
+    Client &client = getClientByFd(clientFd);
+    if (!check_authentication(client, cmd))
+        return;
     std::map<std::string, void (Server::*)(int, const std::string&)> commandMap;
     commandMap["JOIN"] = &Server::JOIN;
     commandMap["PART"] = &Server::PART;
@@ -57,6 +57,9 @@ void Server::handleCommand(int clientFd, const std::string &command) {
 	commandMap["PRIVMSG"] = &Server::PRIVMSG;
 	commandMap["MODE"] = &Server::MODE;
 	commandMap["TOPIC"] = &Server::TOPIC;
+	commandMap["KICK"] = &Server::KICK;
+	commandMap["INVITE"] = &Server::INVITE;
+    commandMap["PING"] = &Server::PING;
     if (commandMap.find(cmd) != commandMap.end()) {
         (this->*commandMap[cmd])(clientFd, params);
     } else {
@@ -86,7 +89,36 @@ int Server::getPort() const {
 }
 
 void Server::sendMessage(int clientFd, const std::string &message) {
-    send(clientFd, message.c_str(), message.length(), 0);
+   
+    Client &client = getClientByFd(clientFd);
+    try {
+        client.queueMessage(message);
+    } catch (const std::exception &e) {
+        std::cerr << "Client " << clientFd << " disconnected while sending message." << e.what() << std::endl;
+        removeClient(clientFd);
+        return;
+    }
+    flushSendBuffer(client);
+}
+
+void Server::flushSendBuffer(Client &client) {
+    std::string &buffer = client.getSendBuffer();
+    while (!buffer.empty()) {
+        ssize_t bytesSent = send(client.getFd(), buffer.c_str(), buffer.size(), 0);
+        if (bytesSent > 0){
+            buffer.erase(0, bytesSent);
+        } else if (bytesSent == -1) {
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                enablePollOut(client.getFd());
+                return;
+            } else {
+                std::cerr << "Error sending message to client " << client.getFd() << std::endl;
+                removeClient(client.getFd());
+                return;
+            }
+        }
+    }
+    disablePollOut(client.getFd());
 }
 
 bool Server::nicknameExists(const std::string &nickname) const
@@ -95,4 +127,22 @@ bool Server::nicknameExists(const std::string &nickname) const
 		if (it->getNickname() == nickname)
 			return true;
 	return false;
+}
+
+void Server::enablePollOut(int clientFd) {
+    for (size_t i = 0; i < poll_fds.size(); ++i) {
+        if (poll_fds[i].fd == clientFd) {
+            poll_fds[i].events |= POLLOUT;
+            return;
+        }
+    }
+}
+
+void Server::disablePollOut(int clientFd) {
+    for (size_t i = 0; i < poll_fds.size(); ++i) {
+        if (poll_fds[i].fd == clientFd) {
+            poll_fds[i].events &= ~POLLOUT;
+            return;
+        }
+    }
 }

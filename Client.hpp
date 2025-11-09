@@ -6,6 +6,7 @@
 class Client {
     public:
         Client(int socketFd);
+        //Client &operator=(const Client &other);
         ~Client();
 
         int getFd() const;
@@ -18,6 +19,10 @@ class Client {
 		void setRealname(const std::string &realname);
         void setAuthenticate();
         bool isAuthenticated() const ;
+        // Message queueing methods
+        void queueMessage(const std::string &message);
+        std::string &getSendBuffer();
+        bool hasPendingMessages() const ;
 
     private:
         int _fd;
@@ -26,5 +31,6 @@ class Client {
 		std::string _realname;
         std::string _ipAddress;
         std::vector<std::string> _channels;
+        std::string _sendBuffer;
         bool _authenticated;
 };

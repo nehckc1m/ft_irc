@@ -11,6 +11,7 @@
 #include <poll.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <cerrno>
 #include "Reply.hpp"
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -63,9 +64,17 @@ class Server {
 		void NICK(int clientFd, const std::string &params);
 		void USER(int clientFd, const std::string &params);
 		void PART(int clientFd, const std::string &params);
+        void KICK(int clientFd, const std::string &params);
+        void INVITE(int clientFd, const std::string &params);
+        void PING(int clientFd, const std::string &params);
+
 
         //UTILITY FUNCTIONS
         bool isPartOfChannel(int clientFd, const std::string &channelName);
         int check_authentication(Client &client, std::string cmd);
-
+        int getFdByNickname(const std::string &nickname);
+        void flushSendBuffer(Client &client);
+        void enablePollOut(int clientFd);
+        void disablePollOut(int clientFd);
+        std::string toString(int value);
 };
