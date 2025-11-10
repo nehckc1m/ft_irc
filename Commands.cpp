@@ -425,7 +425,7 @@ void Server::PART(int clientFd, const std::string &params) {
         if (channels[i].getName() == params) {
             channels[i].removeMember(clientFd);
             std::cout << "Client " << clientFd << " parted from existing channel: " << params << std::endl;
-            sendMessage(clientFd, ":" + getClientByFd(clientFd).getNickname() + " PART " + channels[i].getName() + "\r\n");
+			sendMessage(clientFd, ":" + getClientByFd(clientFd).getNickname() + "!~" + getClientByFd(clientFd).getUsername() + "@localhost PART " + channels[i].getName() + "\r\n");
             return;
         }
     }
