@@ -54,10 +54,13 @@ bool Channel::isOperator(int clientFd) const {
 }
 
 void Channel::removeMember(int clientFd) {
-    std::vector<int>::iterator it = std::find(_members.begin(), _members.end(), clientFd);
-    if (it != _members.end()) {
-        _members.erase(it);
-    }
+    std::vector<int>::iterator it;
+    for(it = _members.begin(); it != _members.end(); ++it) {
+		if (*it == clientFd) {
+			_members.erase(it);
+			break;
+		}
+	}
 }
 
 void Channel::addInvitedMember(int clientFd) {
