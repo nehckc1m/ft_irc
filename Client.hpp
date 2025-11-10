@@ -18,7 +18,9 @@ class Client {
 		void setUsername(const std::string &username);
 		void setRealname(const std::string &realname);
         void setAuthenticate();
+		void setRegistered();
         bool isAuthenticated() const ;
+		bool isRegistered() const ;
         // Message queueing methods
         void queueMessage(const std::string &message);
         std::string &getSendBuffer();
@@ -33,4 +35,5 @@ class Client {
         std::vector<std::string> _channels;
         std::string _sendBuffer;
         bool _authenticated;
+        bool _registered;
 };

@@ -24,7 +24,9 @@ void Reply::init()
 	message[ERR_NICKNAMEINUSE] = srv + str(ERR_NICKNAMEINUSE) + nick + ":Nickname is already in use\r\n";
 	message[ERR_NEEDMOREPARAMS] = srv + str(ERR_NEEDMOREPARAMS) + nick + cmd + " :Not enough parameters\r\n";
 	message[ERR_ALREADYREGISTRED] = srv + str(ERR_ALREADYREGISTRED) + nick + ":You may not reregister\r\n";
-	message[ERR_UNKNOWNCOMMAND] = srv + str(ERR_UNKNOWNCOMMAND) + " " + cmd + " :Unknown command\r\n";
+	message[ERR_UNKNOWNCOMMAND] = srv + str(ERR_UNKNOWNCOMMAND) + nick + cmd + " :Unknown command\r\n";
 	message[ERR_USERSDONTMATCH] = srv + str(ERR_USERSDONTMATCH) + " " + cmd + " :Cannot change mode for other users\r\n";
+	message[ERR_NOTREGISTERED] = srv + str(ERR_NOTREGISTERED) + " " + cmd + " :You have not registered\r\n";
+	message[ERR_NOSUCHCHANNEL] = srv + str(ERR_NOSUCHCHANNEL) + nick + cmd + " :No such channel\r\n";
 }
 
