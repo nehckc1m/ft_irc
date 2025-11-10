@@ -74,30 +74,6 @@ void Server::JOIN(int clientFd, const std::string &params) {
 	joinSuccessful(clientFd, *channel);
 }
 
-void Server::joinSuccessful(int clientFd, Channel &channel) {
-	Client &client = getClientByFd(clientFd);
-	channel.addMember(clientFd);
-	sendMessage(clientFd, ":" + client.getNickname() + " JOIN " + channel.getName() + "\r\n");
-	if (!channel.getTopic().empty()) {
-		sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channel.getName() + " :" + channel.getTopic() + "\r\n");
-	}
-	std::string names;
-
-	for (unsigned long fd = 0; fd < channel.getMembers().size(); ++fd) {
-		if(channel.isOperator(channel.getMembers()[fd])) 
-			names += "@";
-		names += getClientByFd(channel.getMembers()[fd]).getNickname() + " ";
-		
-	}
-	sendMessage(clientFd,
-		":server 353 " + client.getNickname() + " = " + channel.getName() + " :" + names + "\r\n"
-	);
-	sendMessage(clientFd,
-		":server 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list.\r\n"
-	);
-}
-
-
 void Server::PRIVMSG(int clientFd, const std::string &params) {
 
     if (params.empty()) {
