@@ -129,7 +129,9 @@ void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::
                 const std::vector<int> &members = channels[i].getMembers();
                 for (size_t j = 0; j < members.size(); ++j) {
                     if (members[j] != clientFd) {
-                        sendMessage(members[j], "FROM " + client.getNickname() + " " + channelName + ": " + message + "\r\n");
+						sendMessage(members[j], ":" + client.getNickname() + " PRIVMSG " + channelName + " :" + message + "\r\n");
+
+                        // sendMessage(members[j], "FROM " + client.getNickname() + " " + channelName + ": " + message + "\r\n");
                     }
                 }
             } else {
