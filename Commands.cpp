@@ -257,9 +257,10 @@ void Server::MODE(int clientFd, const std::string &params) {
 
 void Server::TOPIC(int clientFd, const std::string &params) {
     if (params.empty()) {
-        sendMessage(clientFd, "ERROR :No channel specified\r\n");
+        sendMessage(clientFd, ":server 461 TOPIC :Not enough parameters\r\n");
         return;
     }
+
     std::string channelName;
     size_t spacePos = params.find(' ');
     if (spacePos == std::string::npos) {
@@ -267,44 +268,56 @@ void Server::TOPIC(int clientFd, const std::string &params) {
     } else {
         channelName = params.substr(0, spacePos);
     }
+
     std::string topic;
     if (spacePos != std::string::npos) {
         topic = params.substr(spacePos + 1);
     }
 
-    if (topic.empty()) {
-        // Get topic
-        for (size_t i = 0; i < channels.size(); ++i) {
-            if (channels[i].getName() == channelName) {
-                if (isPartOfChannel(clientFd, channelName))
-                    return sendMessage(clientFd, "Topic for " + channelName + ": " + channels[i].getTopic() + "\r\n");
-                else
-                    return sendMessage(clientFd, "ERROR :You are not a member of channel " + channelName + "\r\n");
-            }
+    Channel *channel = NULL;
+    for (size_t i = 0; i < channels.size(); ++i) {
+        if (channels[i].getName() == channelName) {
+            channel = &channels[i];
+            break;
         }
-        return sendMessage(clientFd, "ERROR :No such channel\r\n");
     }
-    else {
-        // Set topic
-        for (size_t i = 0; i < channels.size(); ++i) {
-            if (channels[i].getName() == channelName) {
-                if (!isPartOfChannel(clientFd, channelName)) {
-                    return sendMessage(clientFd, "ERROR :You are not a member of channel " + channelName + "\r\n");
-                }
-                if (!channels[i].getTopicRestricted()) {
-                    channels[i].setTopic(topic);
-                    return sendMessage(clientFd, "Topic for " + channelName + " set to: " + topic + "\r\n");
-                }
-                else if (channels[i].isOperator(clientFd) && channels[i].getTopicRestricted()) {
-                    channels[i].setTopic(topic);
-                    sendMessage(clientFd, "Topic for " + channelName + " set to: " + topic + "\r\n");
-                    return;
-                } else {
-                    return sendMessage(clientFd, "ERROR :You are not authorized to set the topic for " + channelName + "\r\n");
-                }
-            }
+
+    if (!channel) {
+        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        return;
+    }
+
+    if (!isPartOfChannel(clientFd, channelName)) {
+        sendMessage(clientFd, ":server 442 " + channelName + " :You're not on that channel\r\n");
+        return;
+    }
+
+    Client &client = getClientByFd(clientFd);
+
+    if (topic.empty()) {
+        std::string currentTopic = channel->getTopic();
+        if (currentTopic.empty()) {
+            sendMessage(clientFd, ":server 331 " + client.getNickname() + " " + channelName + " :No topic is set\r\n");
+        } else {
+            sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channelName + " :" + currentTopic + "\r\n");
         }
-        return sendMessage(clientFd, "ERROR :No such channel\r\n");
+    } else {
+        bool topicRestricted = channel->getTopicRestricted();
+        bool isOperator = channel->isOperator(clientFd);
+
+        if (topicRestricted && !isOperator) {
+            sendMessage(clientFd, ":server 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
+            return;
+        }
+
+        channel->setTopic(topic);
+
+        sendMessage(clientFd, ":server TOPIC " + channelName + " :" + topic + "\r\n");
+
+        const std::vector<int> &members = channel->getMembers();
+        for (size_t i = 0; i < members.size(); ++i) {
+            sendMessage(members[i], ":" + client.getNickname() + "!" + client.getUsername() + "@localhost TOPIC " + channelName + " :" + topic + "\r\n");
+        }
     }
 }
 
