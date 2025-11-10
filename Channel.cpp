@@ -49,15 +49,6 @@ void Channel::addMember(int clientFd) {
     }
 }
 
-void Channel::addOperator(int clientFd) {
-    if (!isOperator(clientFd)) 
-        _operators.push_back(clientFd);
-}
-
-bool Channel::isOperator(int clientFd) const {
-    return std::find(_operators.begin(), _operators.end(), clientFd) != _operators.end();
-}
-
 void Channel::removeMember(int clientFd) {
     std::vector<int>::iterator it;
     for(it = _members.begin(); it != _members.end(); ++it) {
@@ -105,14 +96,22 @@ void Channel::setInviteOnly(bool inviteOnly) {
     _inviteOnly = inviteOnly;
 }
 
-void Channel::setOperator(int clientFd) {
-	if (clientFd == -1)
-		return;
-	if (!isOperator(clientFd))
-		_operators.push_back(clientFd);
-
+void Channel::addOperator(int clientFd) {
+    if (!isOperator(clientFd)) 
+        _operators.push_back(clientFd);
 }
 
+bool Channel::isOperator(int clientFd) const {
+    std::vector<int>::const_iterator it;
+	for (it = _operators.begin(); it != _operators.end(); ++it) {
+		if (*it == clientFd)
+			return true;
+	}
+	return false;
+}
+const std::vector<int> &Channel::getOperators() const {
+	return _operators;
+}
 void Channel::removeOperator(int clientFd) {
 	std::vector<int>::iterator it = std::find(_operators.begin(), _operators.end(), clientFd);
 	if (it != _operators.end()) {
@@ -161,6 +160,4 @@ size_t Channel::getUserLimit() const {
 const std::string &Channel::getPassword() const {
 	return _password;
 }
-const std::vector<int> &Channel::getOperators() const {
-	return _operators;
-}
+

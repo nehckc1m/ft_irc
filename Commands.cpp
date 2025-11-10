@@ -183,16 +183,17 @@ void Server::MODE(int clientFd, const std::string &params) {
 		modeChanges = params.substr(spacePos + 1);
 	}
 
+	Client &client = getClientByFd(clientFd);
 	for (size_t i = 0; i < channels.size(); ++i) {
 		if (channels[i].getName() == channelName) {
 			if (!isPartOfChannel(clientFd, channelName)) {
-				sendMessage(clientFd, "ERROR :You are not a member of channel " + channelName + "\r\n");
+				sendMessage(clientFd, ":localhost 442 " + channelName + " :You're not on that channel\r\n");
 				return;
 			}
 			// For simplicity, we just acknowledge the mode change without actually changing anything
 			if (!modeChanges.empty()) {
 				if (!channels[i].isOperator(clientFd)) {
-					sendMessage(clientFd, "ERROR :You are not a channel operator\r\n");
+					sendMessage(clientFd, ":localhost 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
 					return;
 				}
 			
@@ -203,7 +204,7 @@ void Server::MODE(int clientFd, const std::string &params) {
 					if (modeChanges[1] == 'o') {
 						std::string targetNick = modeChanges.substr(3); // Assuming format is +o <nick>
 						if (targetNick.empty()) {
-							sendMessage(clientFd, "ERROR :No nickname specified for operator mode\r\n");
+							sendMessage(clientFd, ":localhost 461 MODE :Not enough parameters\r\n");
 							return;
 						}
 						int targetFd = getClientFdByNickname(targetNick);
@@ -245,19 +246,23 @@ void Server::MODE(int clientFd, const std::string &params) {
 						channels[i].setUserLimit(0); // Remove user limit
 					}
 				}
-				sendMessage(clientFd, "Mode for " + channelName + " changed: " + modeChanges + "\r\n");
+				sendMessage(clientFd, ":localhost MODE " + channelName + " " + modeChanges + "\r\n");
+				const std::vector<int> &members = channels[i].getMembers();
+				for (size_t k = 0; k < members.size(); ++k) {
+					sendMessage(members[k], ":" + client.getNickname() + "!" + client.getUsername() + "@localhost MODE " + channelName + " " + modeChanges + "\r\n");
+				}
 			} else {
-				sendMessage(clientFd, "Current mode for " + channelName + ": [modes not implemented]\r\n");
+				sendMessage(clientFd, ":localhost 501 " + client.getNickname() + " :Invalid MODE syntax\r\n");
 			}
 			return;
 		}
 	}
-	sendMessage(clientFd, "ERROR :No such channel\r\n");
+	sendMessage(clientFd, ":localhost 403 " + channelName + " :No such channel\r\n");
 }
 
 void Server::TOPIC(int clientFd, const std::string &params) {
     if (params.empty()) {
-        sendMessage(clientFd, ":server 461 TOPIC :Not enough parameters\r\n");
+        sendMessage(clientFd, ":localhost 461 TOPIC :Not enough parameters\r\n");
         return;
     }
 
@@ -283,12 +288,12 @@ void Server::TOPIC(int clientFd, const std::string &params) {
     }
 
     if (!channel) {
-        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        sendMessage(clientFd, ":localhost 403 " + channelName + " :No such channel\r\n");
         return;
     }
 
     if (!isPartOfChannel(clientFd, channelName)) {
-        sendMessage(clientFd, ":server 442 " + channelName + " :You're not on that channel\r\n");
+        sendMessage(clientFd, ":localhost 442 " + channelName + " :You're not on that channel\r\n");
         return;
     }
 
@@ -297,22 +302,22 @@ void Server::TOPIC(int clientFd, const std::string &params) {
     if (topic.empty()) {
         std::string currentTopic = channel->getTopic();
         if (currentTopic.empty()) {
-            sendMessage(clientFd, ":server 331 " + client.getNickname() + " " + channelName + " :No topic is set\r\n");
+            sendMessage(clientFd, ":localhost 331 " + client.getNickname() + " " + channelName + " :No topic is set\r\n");
         } else {
-            sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channelName + " :" + currentTopic + "\r\n");
+            sendMessage(clientFd, ":localhost 332 " + client.getNickname() + " " + channelName + " :" + currentTopic + "\r\n");
         }
     } else {
         bool topicRestricted = channel->getTopicRestricted();
         bool isOperator = channel->isOperator(clientFd);
 
         if (topicRestricted && !isOperator) {
-            sendMessage(clientFd, ":server 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
+            sendMessage(clientFd, ":localhost 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
             return;
         }
 
         channel->setTopic(topic);
 
-        sendMessage(clientFd, ":server TOPIC " + channelName + " :" + topic + "\r\n");
+        sendMessage(clientFd, ":localhost TOPIC " + channelName + " :" + topic + "\r\n");
 
         const std::vector<int> &members = channel->getMembers();
         for (size_t i = 0; i < members.size(); ++i) {
