@@ -21,61 +21,77 @@ void Server::PASS(int clientFd, const std::string &params) {
 }
 
 void Server::JOIN(int clientFd, const std::string &params) {
-    std::cout << "Client " << clientFd << " is attempting to join channel with params: " << params << std::endl;
-    bool paramPassword = false;
-    if (params.empty()) 
-        return sendMessage(clientFd, "ERROR :No channel specified\r\n");
-
-    if (params[0] != '#') 
-        return sendMessage(clientFd, "ERROR :Invalid channel name\r\n");
-
-    if (params.find(' ') != std::string::npos) {
-        paramPassword = true;
+    if (params.empty()) {
+        sendMessage(clientFd, ":server 461 JOIN :Not enough parameters\r\n");
+        return;
     }
-    std::string channelName;
-    if (paramPassword) {
-        channelName = params.substr(0, params.find(' '));
-    } else {
-        channelName = params;
+    std::string channelName = params;
+    size_t spacePos = params.find(' ');
+    if (spacePos != std::string::npos)
+        channelName = params.substr(0, spacePos);
+    if (channelName[0] != '#') {
+        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        return;
     }
-
-    for (size_t i = 0; i < channels.size(); ++i) {
-        std::cout << "Checking existing channel: " << channels[i].getName() << std::endl;
+    Client &client = getClientByFd(clientFd);
+    Channel *channel = NULL;
+    for (size_t i = 0; i < channels.size(); i++) {
         if (channels[i].getName() == channelName) {
-            if (isPartOfChannel(clientFd, channelName)) {
-                return sendMessage(clientFd, "ERROR :You are already a member of channel " + channelName + "\r\n");
-            }
-            if (channels[i].getProtected()){
-                std::cout << "Channel " << params << " is protected. Checking password." << std::endl;
-                size_t spacePos = params.find(' ');
-                std::string channelName = params.substr(0, spacePos);
-                std::string password = params.substr(spacePos + 1); 
-                if (password != channels[i].getPassword())
-                    return sendMessage(clientFd, "ERROR :Cannot join protected channel\r\n");
-            }
-            if (channels[i].getInviteOnly() && !channels[i].isInvited(clientFd)) {
-                std::cout << "Channel " << params << " is invite-only. Checking invitation." << std::endl;
-                return sendMessage(clientFd, "ERROR :Cannot join invite-only channel without invitation\r\n");
-            } 
-			std::cout << "User limit: " << channels[i].getLimit() << std::endl;
-			if (channels[i].getLimit() > 0 && channels[i].getMembers().size() >= channels[i].getLimit()) {
-                std::cout << "Channel " << params << " is full. Cannot join." << std::endl;
-                return sendMessage(clientFd, "ERROR :Cannot join channel: Channel is full\r\n");
-            }
-            channels[i].addMember(clientFd);
-            std::cout << "Client " << clientFd << " joined existing channel: " << channelName << std::endl;
-            sendMessage(clientFd, "Joined channel " + channelName + "\r\n");
-            return;
+            channel = &channels[i];
+            break;
         }
     }
-    Channel newChannel(channelName);
-    std::cout << "Creating new channel: " << channelName << std::endl;
-    newChannel.addMember(clientFd);
-    newChannel.addOperator(clientFd);
-    channels.push_back(newChannel);
-    sendMessage(clientFd, "Joined channel " + channelName + "\r\n");
-    return;
+    if (!channel) {
+        channels.push_back(Channel(channelName));
+        channels.back().addMember(clientFd);
+        channels.back().addOperator(clientFd);
+        channel = &channels.back();
+    } else {
+        if (isPartOfChannel(clientFd, channelName)) {
+            sendMessage(clientFd, ":server 443 " + client.getNickname() + " " + channelName + " :You're already on that channel\r\n");
+            return;
+        }
+        channel->addMember(clientFd);
+    }
+	std::vector<std::string> channelModes;
+	if (channel->getInviteOnly())
+		channelModes.push_back("i");
+	if (channel->getTopicRestricted())
+		channelModes.push_back("t");
+	if (channel->getModerated())
+		channelModes.push_back("m");
+	if (channel->getLimit() > 0)
+		channelModes.push_back("l");
+	if (!channel->getPassword().empty())
+		channelModes.push_back("k");
+	std::string modes;
+	if (!channelModes.empty()) {
+		modes = "+";
+		for (size_t i = 0; i < channelModes.size(); ++i) {
+			modes += channelModes[i];;
+		}
+	}
+	sendMessage(clientFd, ":server 321 " + client.getNickname() + " " + channelName + " " + modes + "\r\n");
+    sendMessage(clientFd, ":" + client.getNickname() + " JOIN " + channelName + "\r\n");
+    if (!channel->getTopic().empty()) {
+        sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channelName + " :" + channel->getTopic() + "\r\n");
+    }
+    std::string names;
+
+    for (unsigned long fd = 0; fd < channel->getMembers().size(); ++fd) {
+		if(channel->isOperator(channel->getMembers()[fd])) 
+			names += "@";
+        names += getClientByFd(channel->getMembers()[fd]).getNickname() + " ";
+		
+	}
+    sendMessage(clientFd,
+        ":server 353 " + client.getNickname() + " = " + channelName + " :" + names + "\r\n"
+    );
+    sendMessage(clientFd,
+        ":server 366 " + client.getNickname() + " " + channelName + " :End of /NAMES list.\r\n"
+    );
 }
+
 
 void Server::PRIVMSG(int clientFd, const std::string &params) {
 
