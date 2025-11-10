@@ -101,19 +101,26 @@ void Server::PRIVMSG(int clientFd, const std::string &params) {
     }
     // Target is a user
     std::string message = params.substr(spacePos + 1);
-	if (message[0] == ':')
-		message.erase(0, 1);
-	int targetFd = 0;
+	if (message.empty()) {
+		sendMessage(clientFd, "ERROR :No message specified\r\n");
+		return;
+	}
+	if (message[0] != ':')
+		message = ":" + message;
+	int targetFd = -1;
     for (size_t i = 0; i < clients.size(); ++i) {
         if (clients[i].getNickname() == target) {
 			targetFd = clients[i].getFd();
             break;
         }
     }
-	
-    if (targetFd) {
+	if (targetFd == -1) {
+		sendMessage(clientFd, "ERROR :No such nickname\r\n");
+		return;
+	}
+    if (targetFd != -1) {
 		std::cout << "Message sent to " + target << std::endl;
-        sendMessage(targetFd, "PRIVMSG from " + getClientByFd(clientFd).getNickname() + " :" + message + "\r\n");
+        sendMessage(targetFd, ":" + getClientByFd(clientFd).getNickname() + " PRIVMSG " + target + " " + message + "\r\n");
     } else {
         sendMessage(clientFd, "ERROR :No such nickname\r\n");
     }
@@ -127,11 +134,13 @@ void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::
         if (channels[i].getName() == channelName) {
             if (isPartOfChannel(clientFd, channelName)) {
                 const std::vector<int> &members = channels[i].getMembers();
+				if (message.empty()) {
+					sendMessage(clientFd, "ERROR :No message specified\r\n");
+					return;
+				}
                 for (size_t j = 0; j < members.size(); ++j) {
                     if (members[j] != clientFd) {
 						sendMessage(members[j], ":" + client.getNickname() + " PRIVMSG " + channelName + " :" + message + "\r\n");
-
-                        // sendMessage(members[j], "FROM " + client.getNickname() + " " + channelName + ": " + message + "\r\n");
                     }
                 }
             } else {
