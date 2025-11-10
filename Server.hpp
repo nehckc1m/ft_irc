@@ -64,7 +64,6 @@ class Server {
 		bool nicknameExists(const std::string &nickname) const;
 		int getClientFdByNickname(const std::string &nickname) const;
 
-
         //COMMAND HANDLERS
         void PASS(int clientFd, const std::string &params);
         void JOIN(int clientFd, const std::string &params);
@@ -88,4 +87,5 @@ class Server {
         void flushSendBuffer(Client &client);
         void enablePollOut(int clientFd);
         void disablePollOut(int clientFd);
+		void joinSuccessful(int clientFd, Channel &channel);
 };

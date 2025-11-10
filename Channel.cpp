@@ -35,7 +35,12 @@ Channel::~Channel() {
 }
 
 bool Channel::isInvited(int clientFd) const {
-    return std::find(_invitedMembers.begin(), _invitedMembers.end(), clientFd) != _invitedMembers.end();
+	std::vector<int>::const_iterator it;
+	for (it = _invitedMembers.begin(); it != _invitedMembers.end(); ++it) {
+		if (*it == clientFd)
+			return true;
+	}
+	return false;
 }
 
 void Channel::addMember(int clientFd) {
@@ -64,9 +69,9 @@ void Channel::removeMember(int clientFd) {
 }
 
 void Channel::addInvitedMember(int clientFd) {
-    if (!isMember(clientFd)) {
-        _invitedMembers.push_back(clientFd);
-    }
+	if (!isInvited(clientFd)) {
+		_invitedMembers.push_back(clientFd);
+	}
 }
 
 bool Channel::getProtected() const {
@@ -78,7 +83,12 @@ void Channel::toggleTopic() {
 }
 
 bool Channel::isMember(int clientFd) const {
-    return std::find(_members.begin(), _members.end(), clientFd) != _members.end();
+    std::vector<int>::const_iterator it;
+	for (it = _members.begin(); it != _members.end(); ++it) {
+		if (*it == clientFd)
+			return true;
+	}
+	return false;
 }
 const std::vector<int> &Channel::getMembers() const {
     return _members;
@@ -119,6 +129,7 @@ void Channel::setUserLimit(size_t limit) {
 }
 
 void Channel::setPassword(const std::string &password) {
+	_protected = true;
     _password = password;
 }
 

@@ -42,54 +42,59 @@ void Server::JOIN(int clientFd, const std::string &params) {
         }
     }
     if (!channel) {
+        std::cout << "Channel " << channelName << " created." << std::endl;
         channels.push_back(Channel(channelName));
         channels.back().addMember(clientFd);
         channels.back().addOperator(clientFd);
         channel = &channels.back();
-    } else {
-        if (isPartOfChannel(clientFd, channelName)) {
-            sendMessage(clientFd, ":server 443 " + client.getNickname() + " " + channelName + " :You're already on that channel\r\n");
-            return;
-        }
-        channel->addMember(clientFd);
+		return joinSuccessful(clientFd, *channel);
+    } 
+    if (channel->isMember(clientFd)) {
+        sendMessage(clientFd, ":server 443 " + client.getNickname() + " " + channelName + " :You're already on that channel\r\n");
+		return;
     }
-	std::vector<std::string> channelModes;
-	if (channel->getInviteOnly())
-		channelModes.push_back("i");
-	if (channel->getTopicRestricted())
-		channelModes.push_back("t");
-	if (channel->getModerated())
-		channelModes.push_back("m");
-	if (channel->getLimit() > 0)
-		channelModes.push_back("l");
-	if (!channel->getPassword().empty())
-		channelModes.push_back("k");
-	std::string modes;
-	if (!channelModes.empty()) {
-		modes = "+";
-		for (size_t i = 0; i < channelModes.size(); ++i) {
-			modes += channelModes[i];;
-		}
+    if (channel->getProtected()){
+        std::cout << "Channel " << params << " is protected. Checking password." << std::endl;
+        size_t spacePos = params.find(' ');
+        std::string channelName = params.substr(0, spacePos);
+        std::string password = params.substr(spacePos + 1); 
+        if (password != channel->getPassword())
+            return sendMessage(clientFd, ":localhost 475 " + client.getNickname() + " " + channelName + " :Cannot join protected channel\r\n");
+    }
+    if (channel->getInviteOnly() && !channel->isInvited(clientFd)) {
+        std::cout << "Channel " << params << " is invite-only. Checking invitation." << std::endl;
+        return sendMessage(clientFd, ":localhost 473 " + client.getNickname() + " " + channelName + " :Cannot join invite-only channel without invitation\r\n");
+    }
+	if (channel->getUserLimit() > 0 && channel->getMembers().size() >= channel->getUserLimit()) {
+		std::cout << "Channel " << params << " has reached its user limit." << std::endl;
+		return sendMessage(clientFd, ":localhost 471 " + client.getNickname() + " #" + channelName + " :Cannot join channel, user limit reached\r\n");
 	}
-	sendMessage(clientFd, ":server 321 " + client.getNickname() + " " + channelName + " " + modes + "\r\n");
-    sendMessage(clientFd, ":" + client.getNickname() + " JOIN " + channelName + "\r\n");
-    if (!channel->getTopic().empty()) {
-        sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channelName + " :" + channel->getTopic() + "\r\n");
-    }
-    std::string names;
+	
+	channel->addMember(clientFd);
+	joinSuccessful(clientFd, *channel);
+}
 
-    for (unsigned long fd = 0; fd < channel->getMembers().size(); ++fd) {
-		if(channel->isOperator(channel->getMembers()[fd])) 
+void Server::joinSuccessful(int clientFd, Channel &channel) {
+	Client &client = getClientByFd(clientFd);
+	channel.addMember(clientFd);
+	sendMessage(clientFd, ":" + client.getNickname() + " JOIN " + channel.getName() + "\r\n");
+	if (!channel.getTopic().empty()) {
+		sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channel.getName() + " :" + channel.getTopic() + "\r\n");
+	}
+	std::string names;
+
+	for (unsigned long fd = 0; fd < channel.getMembers().size(); ++fd) {
+		if(channel.isOperator(channel.getMembers()[fd])) 
 			names += "@";
-        names += getClientByFd(channel->getMembers()[fd]).getNickname() + " ";
+		names += getClientByFd(channel.getMembers()[fd]).getNickname() + " ";
 		
 	}
-    sendMessage(clientFd,
-        ":server 353 " + client.getNickname() + " = " + channelName + " :" + names + "\r\n"
-    );
-    sendMessage(clientFd,
-        ":server 366 " + client.getNickname() + " " + channelName + " :End of /NAMES list.\r\n"
-    );
+	sendMessage(clientFd,
+		":server 353 " + client.getNickname() + " = " + channel.getName() + " :" + names + "\r\n"
+	);
+	sendMessage(clientFd,
+		":server 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list.\r\n"
+	);
 }
 
 
@@ -225,7 +230,6 @@ void Server::MODE(int clientFd, const std::string &params) {
 							sendMessage(clientFd, "ERROR :No nickname specified for operator mode\r\n");
 							return;
 						}
-						
 						int targetFd = getClientFdByNickname(targetNick);
 						channels[i].addOperator(targetFd);
 					}
@@ -248,7 +252,6 @@ void Server::MODE(int clientFd, const std::string &params) {
 							}
 						}
 					}
-
 				} else if (modeChanges[0] == '-') {
 					if (modeChanges[1] == 't') {
 						channels[i].toggleTopic();
@@ -266,7 +269,6 @@ void Server::MODE(int clientFd, const std::string &params) {
 						channels[i].setUserLimit(0); // Remove user limit
 					}
 				}
-
 				sendMessage(clientFd, "Mode for " + channelName + " changed: " + modeChanges + "\r\n");
 			} else {
 				sendMessage(clientFd, "Current mode for " + channelName + ": [modes not implemented]\r\n");
