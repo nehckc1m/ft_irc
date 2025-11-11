@@ -1,6 +1,5 @@
 #include "Server.hpp"
 
-
 bool Server::isPartOfChannel(int clientFd, const std::string &channelName) {
     for (size_t i = 0; i < channels.size(); ++i) {
         if (channels[i].getName() == channelName) {
@@ -15,10 +14,6 @@ int Server::check_authentication(Client &client, std::string cmd) {
         sendMessage(client.getFd(), "ERROR :You must authenticate first\r\n");
         return 0;
     }
-   /* if (client.getUsername().empty() && cmd != "USER" && client.isAuthenticated()) {
-        sendMessage(client.getFd(), "ERROR :You must set your username first\r\n");
-        return 0;
-    }*/
     return 1;
 }
 
@@ -30,14 +25,14 @@ int Server::getFdByNickname(const std::string &nickname) {
     }
     return -1;
 }
-
-
+	
 void Server::joinSuccessful(int clientFd, Channel &channel) {
+	Reply reply("JOIN", getClientByFd(clientFd));
 	Client &client = getClientByFd(clientFd);
 	channel.addMember(clientFd);
 	sendMessage(clientFd, ":" + client.getNickname() + " JOIN " + channel.getName() + "\r\n");
 	if (!channel.getTopic().empty()) {
-		sendMessage(clientFd, ":server 332 " + client.getNickname() + " " + channel.getName() + " :" + channel.getTopic() + "\r\n");
+		sendMessage(clientFd, reply.msg(RPL_TOPIC, channel.getName(), channel.getTopic()));
 	}
 	std::string names;
 
@@ -48,10 +43,10 @@ void Server::joinSuccessful(int clientFd, Channel &channel) {
 		
 	}
 	sendMessage(clientFd,
-		":server 353 " + client.getNickname() + " = " + channel.getName() + " :" + names + "\r\n"
+		":localhost 353 " + client.getNickname() + " = " + channel.getName() + " :" + names + "\r\n"
 	);
 	sendMessage(clientFd,
-		":server 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list.\r\n"
+		":localhost 366 " + client.getNickname() + " " + channel.getName() + " :End of /NAMES list.\r\n"
 	);
 }
 
@@ -63,7 +58,7 @@ void Server::user_mode(int clientFd, const std::string &params) {
 		return;
 	}
 	if (getClientByFd(clientFd).getNickname() != args[0]) {
-		sendMessage(clientFd, reply.msg(ERR_USERSDONTMATCH));
+		sendMessage(clientFd, reply.msg(ERR_USERSDONTMATCH, params));
 		return;
 	}
 }

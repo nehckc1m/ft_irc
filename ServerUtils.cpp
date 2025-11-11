@@ -46,9 +46,6 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     if (pos != std::string::npos)
 		params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
-    // Client &client = getClientByFd(clientFd);
-    // if (!check_authentication(client, cmd))
-    //     return;
     std::map<std::string, void (Server::*)(int, const std::string&)> commandMap;
     commandMap["JOIN"] = &Server::JOIN;
     commandMap["PART"] = &Server::PART;
