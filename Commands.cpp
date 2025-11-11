@@ -153,18 +153,7 @@ void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::
     sendMessage(clientFd, "ERROR :No such channel\r\n");
 }
 
-void Server::user_mode(int clientFd, const std::string &params) {
-	Reply reply("MODE", getClientByFd(clientFd));
-	std::vector<std::string> args = split_string(params, ' ');
-	if (args.size() != 2) {
-		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
-		return;
-	}
-	if (getClientByFd(clientFd).getNickname() != args[0]) {
-		sendMessage(clientFd, reply.msg(ERR_USERSDONTMATCH));
-		return;
-	}
-}
+
 
 void Server::MODE(int clientFd, const std::string &params) {
     Reply reply("MODE", getClientByFd(clientFd));

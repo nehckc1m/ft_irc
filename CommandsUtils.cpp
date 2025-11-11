@@ -55,3 +55,15 @@ void Server::joinSuccessful(int clientFd, Channel &channel) {
 	);
 }
 
+void Server::user_mode(int clientFd, const std::string &params) {
+	Reply reply("MODE", getClientByFd(clientFd));
+	std::vector<std::string> args = split_string(params, ' ');
+	if (args.size() != 2) {
+		sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
+		return;
+	}
+	if (getClientByFd(clientFd).getNickname() != args[0]) {
+		sendMessage(clientFd, reply.msg(ERR_USERSDONTMATCH));
+		return;
+	}
+}
