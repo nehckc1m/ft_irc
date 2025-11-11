@@ -71,6 +71,9 @@ void Server::acceptNewConnection() {
               close(client_socket);
               return;
        }
+	   
+	   clientBuffers[client_socket] = "";
+
        Client newClient(client_socket);
        clients.push_back(newClient);
        addSocketToPoll(client_socket);

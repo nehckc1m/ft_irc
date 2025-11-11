@@ -15,23 +15,34 @@ void Server::SignalHandler(int signum) {
 void Server::processBuffer(int clientFd, char *buffer, int bytes) {
     std::cout << "Server::processBuffer called fd=" << clientFd << std::endl;
 	std::cout << GRAY << "add to buffer the str=" << std::string(buffer, bytes) << RST << std::endl;
-	//std::map<int, std::string>::const_iterator it =	clientBuffers.find(clientFd);
-	//if (it == clientBuffers.end()) {
-	//	std::cout << RED << "catched trying to add to buffer the str=" << std::string(buffer, bytes) << RST << std::endl;
-	//	return ;
-	//}
+	
+	if (clientBuffers.find(clientFd) == clientBuffers.end()) {
+		std::cout << RED << "Client not found in buffer, fd=" << clientFd << RST << std::endl;
+		return;
+	}
+	
 	clientBuffers[clientFd] += std::string(buffer, bytes);
-    std::string &clientBuffer = clientBuffers[clientFd];
+    std::string clientBuffer = clientBuffers[clientFd];  
     std::size_t pos;
+    bool clientDisconnected = false;
 
-    while ((pos = clientBuffer.find('\n')) != std::string::npos) {
+    while ((pos = clientBuffer.find('\n')) != std::string::npos && !clientDisconnected) {
         std::string command = clientBuffer.substr(0, pos);
         clientBuffer.erase(0, pos + 1);
         if (!command.empty() && command[command.size() - 1] == '\r') {
-            command.erase(command.size() - 1); // Remove trailing '\r' if present
+            command.erase(command.size() - 1);
         }
-        // Here you would handle the command, e.g., call server.handleCommand(clientFd, command);
+        
         handleCommand(clientFd, command);
+        
+        if (clientBuffers.find(clientFd) == clientBuffers.end()) {
+            clientDisconnected = true;
+            std::cout << "Client " << clientFd << " disconnected (QUIT command)" << std::endl;
+        }
+    }
+
+    if (clientBuffers.find(clientFd) != clientBuffers.end()) {
+        clientBuffers[clientFd] = clientBuffer;
     }
 }
 
