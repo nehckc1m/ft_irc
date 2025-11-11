@@ -41,9 +41,9 @@ class Server {
         std::string _password;
         int _servSocket;
         std::vector<struct pollfd> poll_fds;
-        std::vector<Client> clients; // client tbd later
-        std::vector<Channel> channels; // channel tbd later
-        std::map<int, std::string> clientBuffers; // Buffer for each client
+        std::vector<Client> clients; 
+        std::vector<Channel> channels; 
+        std::map<int, std::string> clientBuffers;
         static bool _signal;
         int getPort() const;
         void sendMessage(int clientFd, const std::string &message);

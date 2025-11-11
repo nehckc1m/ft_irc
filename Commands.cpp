@@ -244,7 +244,7 @@ void Server::MODE(int clientFd, const std::string &params) {
             appliedModes += mode;
         }
         else if (mode == 'i') {
-            channel.setInviteOnly();
+            channel.setInviteOnly(adding);
             appliedModes += mode;
         }
         else if (mode == 'k') {
@@ -455,7 +455,6 @@ void Server::PART(int clientFd, const std::string &params) {
         std::cout << "Checking existing channel: " << channels[i].getName() << std::endl;
         if (channels[i].getName() == params) {
             channels[i].removeMember(clientFd);
-            //channels[i].removeOperator(clientFd);
             std::cout << "Client " << clientFd << " parted from existing channel: " << params << std::endl;
 			sendMessage(clientFd, ":" + getClientByFd(clientFd).getNickname() + "!~" + getClientByFd(clientFd).getUsername() + "@localhost PART " + channels[i].getName() + "\r\n");
             return;

@@ -102,8 +102,8 @@ void Channel::removePassword() {
     _password.clear();
 }
 
-void Channel::setInviteOnly() {
-    _inviteOnly = !_inviteOnly;
+void Channel::setInviteOnly(bool inviteOnly) {
+    _inviteOnly = inviteOnly;
 }
 
 void Channel::addOperator(int clientFd) {
