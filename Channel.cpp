@@ -100,6 +100,8 @@ const std::string &Channel::getName() const {
 
 void Channel::removePassword() {
     _password.clear();
+    _protected = false;
+    //_password = "";
 }
 
 void Channel::setInviteOnly(bool inviteOnly) {
