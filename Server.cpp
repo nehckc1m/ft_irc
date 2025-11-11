@@ -118,6 +118,12 @@ void Server::removeClient(int clientFd)
               if (clients[i].getFd() == clientFd)
               {
                      std::cout << "Removing client with fd: " << clientFd << std::endl;
+					 // Removing from all channels _members _operators _invitedMembers
+					for (std::vector<Channel>::iterator it = channels.begin(); it != channels.end(); ++it) {
+						if (it->isInvited(clientFd))	it->removeInvitedMember(clientFd);
+						if (it->isOperator(clientFd))	it->removeOperator(clientFd);
+						if (it->isMember(clientFd))		it->removeMember(clientFd);
+					}
                      close(clientFd);
                      clients.erase(clients.begin() + i);
                      break;

@@ -7,6 +7,7 @@ Client::Client(int socketFd){
 	_username = "";
 	_realname = "";
     _authenticated = false;
+	_registered = false;
 }
 
 /*Client& Client::operator=(const Client &other) {
@@ -46,6 +47,10 @@ void Client::setAuthenticate() {
     _authenticated = true;
 }
 
+void Client::setRegistered() {
+    _registered = true;
+}
+
 std::string Client::getNickname() const {
     return _nickname;
 }
@@ -53,6 +58,11 @@ std::string Client::getNickname() const {
 bool Client::isAuthenticated() const {
     return _authenticated;
 }
+
+bool Client::isRegistered() const {
+    return _registered;
+}
+
 void Client::setUsername(const std::string &username) {
 	_username = username;
 }

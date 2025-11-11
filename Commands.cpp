@@ -6,23 +6,28 @@ void Server::PASS(int clientFd, const std::string &params) {
     
     Client &client = getClientByFd(clientFd);
     if (client.isAuthenticated()) {
-        return sendMessage(clientFd, "ERROR :You are already authenticated\r\n");
+        return sendMessage(clientFd, ":localhost PASS :You are already authenticated\r\n");
     }
-
-    if (params == _password) {
-        // client.setAuthenticate();
+	if (params == _password) {
+        client.setAuthenticate();
         std::cout << "Client " << clientFd << " authenticated successfully." << std::endl;
-        //sendMessage(clientFd, "Welcome to the IRC server!\r\n");
     }
     else {
         std::cout << "Client " << clientFd << " provided incorrect password." << std::endl;
-        sendMessage(clientFd, "ERROR :Password incorrect\r\n");
+        sendMessage(clientFd, ":localhost PASS :Password incorrect\r\n");
     }
 }
 
 void Server::JOIN(int clientFd, const std::string &params) {
-    if (params.empty()) {
-        sendMessage(clientFd, ":server 461 JOIN :Not enough parameters\r\n");
+	Client &client = getClientByFd(clientFd);
+
+	Reply r("JOIN", client);
+
+	if (!client.isRegistered())
+		return sendMessage(clientFd, r.msg(ERR_NOTREGISTERED));
+
+	if (params.empty()) {
+        sendMessage(clientFd, ":localhost 461 JOIN :Not enough parameters\r\n");
         return;
     }
     std::string channelName = params;
@@ -30,10 +35,9 @@ void Server::JOIN(int clientFd, const std::string &params) {
     if (spacePos != std::string::npos)
         channelName = params.substr(0, spacePos);
     if (channelName[0] != '#') {
-        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        sendMessage(clientFd, ":localhost 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
         return;
     }
-    Client &client = getClientByFd(clientFd);
     Channel *channel = NULL;
     for (size_t i = 0; i < channels.size(); i++) {
         if (channels[i].getName() == channelName) {
@@ -370,6 +374,12 @@ void Server::TOPIC(int clientFd, const std::string &params) {
 }
 
 void Server::NICK(int clientFd, const std::string &params) {
+
+    Client &client = getClientByFd(clientFd);
+    if (!client.isAuthenticated()) {
+        return sendMessage(clientFd, ":localhost NICK :Password required\r\n");
+    }
+
 	Reply reply("NICK", getClientByFd(clientFd));
 	if (params.empty()) {
 		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
@@ -394,7 +404,10 @@ void Server::NICK(int clientFd, const std::string &params) {
 }
 
 void Server::USER(int clientFd, const std::string &params) {
-	Client &client = getClientByFd(clientFd);
+    Client &client = getClientByFd(clientFd);
+    if (client.getNickname().empty()) {
+        return sendMessage(clientFd, ":localhost USER :Nickname required\r\n");
+    }
 
 	Reply reply("USER", client);
 
@@ -425,6 +438,7 @@ void Server::USER(int clientFd, const std::string &params) {
 	}	
 	client.setUsername(args[0]);
 	client.setRealname(realname);
+	client.setRegistered();
 	sendMessage(clientFd, reply.msg(RPL_WELCOME));
 }
 	
@@ -450,7 +464,7 @@ void Server::PART(int clientFd, const std::string &params) {
         if (channels[i].getName() == params) {
             channels[i].removeMember(clientFd);
             std::cout << "Client " << clientFd << " parted from existing channel: " << params << std::endl;
-            sendMessage(clientFd, ":" + getClientByFd(clientFd).getNickname() + " PART " + channels[i].getName() + "\r\n");
+			sendMessage(clientFd, ":" + getClientByFd(clientFd).getNickname() + "!~" + getClientByFd(clientFd).getUsername() + "@localhost PART " + channels[i].getName() + "\r\n");
             return;
         }
     }

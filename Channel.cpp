@@ -59,6 +59,15 @@ void Channel::removeMember(int clientFd) {
 	}
 }
 
+void Channel::removeInvitedMember(int clientFd) {
+	for (std::vector<int>::iterator it = _invitedMembers.begin(); it != _invitedMembers.end(); ++it) {
+		if (*it == clientFd) {
+			_invitedMembers.erase(it);
+			break;
+		}
+	}
+}
+
 void Channel::addInvitedMember(int clientFd) {
 	if (!isInvited(clientFd)) {
 		_invitedMembers.push_back(clientFd);

@@ -18,6 +18,8 @@ class Channel {
         void addInvitedMember(int clientFd);
         bool isInvited(int clientFd) const ;
         void removeMember(int clientFd);
+		void removeInvitedMember(int clientFd);
+		void removeOperator(int clientFd);
         bool isMember(int clientFd) const;
         bool isOperator(int clientFd) const;
 
@@ -40,7 +42,6 @@ class Channel {
         bool getTopicRestricted() const ;
         bool getProtected() const ;
         const std::vector<int> &getOperators() const ;
-		void removeOperator(int clientFd);
     private:
         std::string _name;
         std::string _topic;
