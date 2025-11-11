@@ -73,87 +73,85 @@ void Server::JOIN(int clientFd, const std::string &params) {
 		std::cout << "Channel " << params << " has reached its user limit." << std::endl;
 		return sendMessage(clientFd, ":localhost 471 " + client.getNickname() + " #" + channelName + " :Cannot join channel, user limit reached\r\n");
 	}
-	
 	channel->addMember(clientFd);
 	joinSuccessful(clientFd, *channel);
 }
 
 void Server::PRIVMSG(int clientFd, const std::string &params) {
-
     if (params.empty()) {
-        sendMessage(clientFd, "ERROR :No target specified\r\n");
+        sendMessage(clientFd, ":server 411 :No recipient given (PRIVMSG)\r\n");
         return;
     }
     size_t spacePos = params.find(' ');
     if (spacePos == std::string::npos) {
-        sendMessage(clientFd, "ERROR :No message specified\r\n");
+        sendMessage(clientFd, ":server 412 :No text to send\r\n");
         return;
     }
     std::string target = params.substr(0, spacePos);
+    std::string message = params.substr(spacePos + 1);
+    
+    if (message.empty()) {
+        sendMessage(clientFd, ":server 412 :No text to send\r\n");
+        return;
+    }
+    if (message[0] == ':') {
+        message = message.substr(1);
+    }
+    Client &client = getClientByFd(clientFd);
     // Target is a channel
     if (target[0] == '#') {
-        std::string message = params.substr(spacePos + 1);
-        if (message.empty()) {
-            sendMessage(clientFd, "ERROR :No message specified\r\n");
-            return;
-        }
         MSG_CHANNEL(clientFd, target, message);
         return;
     }
     // Target is a user
-    std::string message = params.substr(spacePos + 1);
-	if (message.empty()) {
-		sendMessage(clientFd, "ERROR :No message specified\r\n");
-		return;
-	}
-	if (message[0] != ':')
-		message = ":" + message;
-	int targetFd = -1;
+    int targetFd = -1;
+    std::string targetNick = "";
     for (size_t i = 0; i < clients.size(); ++i) {
         if (clients[i].getNickname() == target) {
-			targetFd = clients[i].getFd();
+            targetFd = clients[i].getFd();
+            targetNick = clients[i].getNickname();
             break;
         }
     }
-	if (targetFd == -1) {
-		sendMessage(clientFd, "ERROR :No such nickname\r\n");
-		return;
-	}
-    if (targetFd != -1) {
-		std::cout << "Message sent to " + target << std::endl;
-        sendMessage(targetFd, ":" + getClientByFd(clientFd).getNickname() + " PRIVMSG " + target + " " + message + "\r\n");
-    } else {
-        sendMessage(clientFd, "ERROR :No such nickname\r\n");
+    if (targetFd == -1) {
+        sendMessage(clientFd, ":server 401 " + client.getNickname() + " " + target + " :No such nick/channel\r\n");
+        return;
     }
+    std::cout << "Message sent to " << target << std::endl;
+    sendMessage(targetFd, ":" + client.getNickname() + "!" + client.getUsername() + "@localhost PRIVMSG " + target + " :" + message + "\r\n");
 }
 
-void Server::MSG_CHANNEL(int clientFd, const std::string channelName,const std::string message) {
-
+void Server::MSG_CHANNEL(int clientFd, const std::string &channelName, const std::string &message) {
     std::cout << "Client " << clientFd << " is sending message to channel " << channelName << ": " << message << std::endl;
+    
     Client &client = getClientByFd(clientFd);
-    for (size_t i = 0; i < channels.size(); ++i) {
+    size_t i;
+    for (i = 0; i < channels.size(); ++i) {
         if (channels[i].getName() == channelName) {
-            if (isPartOfChannel(clientFd, channelName)) {
-                const std::vector<int> &members = channels[i].getMembers();
-				if (message.empty()) {
-					sendMessage(clientFd, "ERROR :No message specified\r\n");
-					return;
-				}
-                for (size_t j = 0; j < members.size(); ++j) {
-                    if (members[j] != clientFd) {
-						sendMessage(members[j], ":" + client.getNickname() + " PRIVMSG " + channelName + " :" + message + "\r\n");
-                    }
-                }
-            } else {
-                sendMessage(clientFd, "ERROR :You are not a member of channel " + channelName + "\r\n");
-            }
-            return;
+            break;
         }
     }
-    sendMessage(clientFd, "ERROR :No such channel\r\n");
+    
+    if (i >= channels.size()) {
+        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        return;
+    }
+    if (!isPartOfChannel(clientFd, channelName)) {
+        sendMessage(clientFd, ":server 404 " + channelName + " :Cannot send to channel\r\n");
+        return;
+    }
+    
+    if (message.empty()) {
+        sendMessage(clientFd, ":server 412 :No text to send\r\n");
+        return;
+    }
+    const std::vector<int> &members = channels[i].getMembers();
+    for (size_t j = 0; j < members.size(); ++j) {
+        if (members[j] != clientFd) {
+            sendMessage(members[j], ":" + client.getNickname() + "!" + client.getUsername() + "@localhost PRIVMSG " + channelName + " :" + message + "\r\n");
+        }
+    }
 }
-
-
 
 void Server::MODE(int clientFd, const std::string &params) {
     Reply reply("MODE", getClientByFd(clientFd));
