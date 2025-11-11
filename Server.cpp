@@ -112,6 +112,7 @@ void Server::run(){
 
 void Server::removeClient(int clientFd)
 {
+		std::cout << "Server::removeClient called" << std::endl;
        clientBuffers.erase(clientFd);
        for (size_t i = 0; i < clients.size(); ++i)
        {
