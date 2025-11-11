@@ -5,16 +5,20 @@
 void Server::PASS(int clientFd, const std::string &params) {
     
     Client &client = getClientByFd(clientFd);
+	if (params.empty())
+			return sendMessage(clientFd, ":localhost 461 PASS :Not enough parameters\r\n");
+
     if (client.isAuthenticated()) {
-        return sendMessage(clientFd, ":localhost PASS :You are already authenticated\r\n");
+        return sendMessage(clientFd, ":localhost 462 :You may not reregister\r\n");
     }
 	if (params == _password) {
         client.setAuthenticate();
         std::cout << "Client " << clientFd << " authenticated successfully." << std::endl;
+		return;
     }
     else {
         std::cout << "Client " << clientFd << " provided incorrect password." << std::endl;
-        sendMessage(clientFd, ":localhost PASS :Password incorrect\r\n");
+        sendMessage(clientFd, ":localhost 464 :Password incorrect\r\n");
     }
 }
 
@@ -54,7 +58,7 @@ void Server::JOIN(int clientFd, const std::string &params) {
 		return joinSuccessful(clientFd, *channel);
     } 
     if (channel->isMember(clientFd)) {
-        sendMessage(clientFd, ":server 443 " + client.getNickname() + " " + channelName + " :You're already on that channel\r\n");
+        sendMessage(clientFd, ":localhost 443 " + client.getNickname() + " " + channelName + " :You're already on that channel\r\n");
 		return;
     }
     if (channel->getProtected()){
@@ -79,19 +83,19 @@ void Server::JOIN(int clientFd, const std::string &params) {
 
 void Server::PRIVMSG(int clientFd, const std::string &params) {
     if (params.empty()) {
-        sendMessage(clientFd, ":server 411 :No recipient given (PRIVMSG)\r\n");
+        sendMessage(clientFd, ":localhost 411 :No recipient given (PRIVMSG)\r\n");
         return;
     }
     size_t spacePos = params.find(' ');
     if (spacePos == std::string::npos) {
-        sendMessage(clientFd, ":server 412 :No text to send\r\n");
+        sendMessage(clientFd, ":localhost 412 :No text to send\r\n");
         return;
     }
     std::string target = params.substr(0, spacePos);
     std::string message = params.substr(spacePos + 1);
     
     if (message.empty()) {
-        sendMessage(clientFd, ":server 412 :No text to send\r\n");
+        sendMessage(clientFd, ":localhost 412 :No text to send\r\n");
         return;
     }
     if (message[0] == ':') {
@@ -114,7 +118,7 @@ void Server::PRIVMSG(int clientFd, const std::string &params) {
         }
     }
     if (targetFd == -1) {
-        sendMessage(clientFd, ":server 401 " + client.getNickname() + " " + target + " :No such nick/channel\r\n");
+        sendMessage(clientFd, ":localhost 401 " + client.getNickname() + " " + target + " :No such nick/channel\r\n");
         return;
     }
     std::cout << "Message sent to " << target << std::endl;
@@ -133,16 +137,16 @@ void Server::MSG_CHANNEL(int clientFd, const std::string &channelName, const std
     }
     
     if (i >= channels.size()) {
-        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        sendMessage(clientFd, ":localhost 403 " + channelName + " :No such channel\r\n");
         return;
     }
     if (!isPartOfChannel(clientFd, channelName)) {
-        sendMessage(clientFd, ":server 404 " + channelName + " :Cannot send to channel\r\n");
+        sendMessage(clientFd, ":localhost 404 " + channelName + " :Cannot send to channel\r\n");
         return;
     }
     
     if (message.empty()) {
-        sendMessage(clientFd, ":server 412 :No text to send\r\n");
+        sendMessage(clientFd, ":localhost 412 :No text to send\r\n");
         return;
     }
     const std::vector<int> &members = channels[i].getMembers();
@@ -185,14 +189,14 @@ void Server::MODE(int clientFd, const std::string &params) {
     }
     
     if (i == channels.size()) {
-        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        sendMessage(clientFd, ":localhost 403 " + channelName + " :No such channel\r\n");
         return;
     }
     
     Channel &channel = channels[i];
  
     if (!isPartOfChannel(clientFd, channelName)) {
-        sendMessage(clientFd, ":server 442 " + channelName + " :You're not on that channel\r\n");
+        sendMessage(clientFd, ":localhost 442 " + channelName + " :You're not on that channel\r\n");
         return;
     }
  
@@ -202,12 +206,12 @@ void Server::MODE(int clientFd, const std::string &params) {
         if (channel.getInviteOnly()) modes += "i";
         if (channel.getProtected()) modes += "k";
         if (channel.getUserLimit() > 0) modes += "l";
-        sendMessage(clientFd, ":server 324 " + client.getNickname() + " " + channelName + " " + modes + "\r\n");
+        sendMessage(clientFd, ":localhost 324 " + client.getNickname() + " " + channelName + " " + modes + "\r\n");
         return;
     }
     
     if (!channel.isOperator(clientFd)) {
-        sendMessage(clientFd, ":server 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
+        sendMessage(clientFd, ":localhost 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
         return;
     }
     
@@ -230,7 +234,7 @@ void Server::MODE(int clientFd, const std::string &params) {
             std::string targetNick = modeParams[paramIndex++];
             int targetFd = getClientFdByNickname(targetNick);
             if (targetFd == -1) {
-                sendMessage(clientFd, ":server 401 " + client.getNickname() + " " + targetNick + " :No such nick/channel\r\n");
+                sendMessage(clientFd, ":localhost 401 " + client.getNickname() + " " + targetNick + " :No such nick/channel\r\n");
                 return;
             }
             if (adding) {
@@ -266,7 +270,7 @@ void Server::MODE(int clientFd, const std::string &params) {
                 std::string limitStr = modeParams[paramIndex++];
                 int limit = atoi(limitStr.c_str());
                 if (limit <= 0) {
-                    sendMessage(clientFd, ":server 501 " + client.getNickname() + " :Invalid user limit\r\n");
+                    sendMessage(clientFd, ":localhost 501 " + client.getNickname() + " :Invalid user limit\r\n");
                     return;
                 }
                 channel.setUserLimit(limit);
@@ -276,7 +280,7 @@ void Server::MODE(int clientFd, const std::string &params) {
             appliedModes += mode;
         }
         else {
-            sendMessage(clientFd, ":server 501 " + client.getNickname() + " :Unknown MODE flag\r\n");
+            sendMessage(clientFd, ":localhost 501 " + client.getNickname() + " :Unknown MODE flag\r\n");
             return;
         }
     }
@@ -285,8 +289,8 @@ void Server::MODE(int clientFd, const std::string &params) {
     for (size_t k = 0; k < paramIndex; ++k) {
         modeReply += " " + modeParams[k];
     }
- 
-    sendMessage(clientFd, ":server MODE " + channelName + " " + modeReply + "\r\n");
+
+    sendMessage(clientFd, ":localhost MODE " + channelName + " " + modeReply + "\r\n");
 
     const std::vector<int> &members = channel.getMembers();
     for (size_t k = 0; k < members.size(); ++k) {
@@ -364,7 +368,7 @@ void Server::NICK(int clientFd, const std::string &params) {
 
     Client &client = getClientByFd(clientFd);
     if (!client.isAuthenticated()) {
-        return sendMessage(clientFd, ":localhost NICK :Password required\r\n");
+        return sendMessage(clientFd, ":localhost 464 :Password incorrect\r\n");
     }
 
 	Reply reply("NICK", getClientByFd(clientFd));
@@ -388,12 +392,13 @@ void Server::NICK(int clientFd, const std::string &params) {
 
 	// Setting nickname
 	getClientByFd(clientFd).setNickname(params);
+	sendMessage(clientFd, ":" + params + "!" + client.getUsername() + "@localhost NICK " + params + "\r\n");
 }
 
 void Server::USER(int clientFd, const std::string &params) {
     Client &client = getClientByFd(clientFd);
     if (client.getNickname().empty()) {
-        return sendMessage(clientFd, ":localhost USER :Nickname required\r\n");
+        return sendMessage(clientFd, ":localhost 451 :You have not registered\r\n");
     }
 
 	Reply reply("USER", client);
@@ -420,13 +425,15 @@ void Server::USER(int clientFd, const std::string &params) {
 	{
 		std::string msg("Error: malformed USER command. Realname must start with ':'");
 		std::cout << msg << std::endl;
-		sendMessage(clientFd, msg + "\r\n");
+		sendMessage(clientFd, msg + ":localhost 461 USER :Not enough parameters\r\n");
 		return;
 	}	
 	client.setUsername(args[0]);
 	client.setRealname(realname);
 	client.setRegistered();
-	sendMessage(clientFd, reply.msg(RPL_WELCOME));
+	std::cout << "Client " << clientFd << " registered as " << client.getNickname() << " (" << client.getUsername() << ")" << std::endl;
+	// sendMessage(clientFd, reply.msg(RPL_WELCOME));
+	sendMessage(clientFd, ":localhost 001 " + client.getNickname() + " :Welcome to the FT_IRC server " + client.getNickname() + "!" + client.getUsername() + "@localhost\r\n");
 }
 	
 void Server::PART(int clientFd, const std::string &params) {
@@ -450,6 +457,8 @@ void Server::PART(int clientFd, const std::string &params) {
         std::cout << "Checking existing channel: " << channels[i].getName() << std::endl;
         if (channels[i].getName() == params) {
             channels[i].removeMember(clientFd);
+			channels[i].removeOperator(clientFd);
+			channels[i].removeInvitedMember(clientFd);
             std::cout << "Client " << clientFd << " parted from existing channel: " << params << std::endl;
 			sendMessage(clientFd, ":" + getClientByFd(clientFd).getNickname() + "!~" + getClientByFd(clientFd).getUsername() + "@localhost PART " + channels[i].getName() + "\r\n");
             return;
@@ -461,13 +470,13 @@ void Server::PART(int clientFd, const std::string &params) {
 
 void Server::KICK(int clientFd, const std::string &params) {
     if (params.empty()) {
-        sendMessage(clientFd, ":server 461 KICK :Not enough parameters\r\n");
+        sendMessage(clientFd, ":localhost 461 KICK :Not enough parameters\r\n");
         return;
     }
     Client &client = getClientByFd(clientFd);
     std::vector<std::string> tokens = split_string(params, ' ');
     if (tokens.size() < 2) {
-        sendMessage(clientFd, ":server 461 KICK :Not enough parameters\r\n");
+        sendMessage(clientFd, ":localhost 461 KICK :Not enough parameters\r\n");
         return;
     }
     std::string channelName = tokens[0];
@@ -482,15 +491,15 @@ void Server::KICK(int clientFd, const std::string &params) {
             break;
     }
     if (i >= channels.size()) {
-        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        sendMessage(clientFd, ":localhost 403 " + channelName + " :No such channel\r\n");
         return;
     }
     if (!channels[i].isMember(clientFd)) {
-        sendMessage(clientFd, ":server 442 " + channelName + " :You're not on that channel\r\n");
+        sendMessage(clientFd, ":localhost 442 " + channelName + " :You're not on that channel\r\n");
         return;
     }
     if (!channels[i].isOperator(clientFd)) {
-        sendMessage(clientFd, ":server 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
+        sendMessage(clientFd, ":localhost 482 " + client.getNickname() + " " + channelName + " :You're not channel operator\r\n");
         return;
     }
     size_t j;
@@ -502,11 +511,11 @@ void Server::KICK(int clientFd, const std::string &params) {
         }
     }
     if (kickFd == -1) {
-        sendMessage(clientFd, ":server 401 " + client.getNickname() + " " + nickToKick + " :No such nick/channel\r\n");
+        sendMessage(clientFd, ":localhost 401 " + client.getNickname() + " " + nickToKick + " :No such nick/channel\r\n");
         return;
     }
     if (!channels[i].isMember(kickFd)) {
-        sendMessage(clientFd, ":server 441 " + nickToKick + " " + channelName + " :They are not on that channel\r\n");
+        sendMessage(clientFd, ":localhost 441 " + nickToKick + " " + channelName + " :They are not on that channel\r\n");
         return;
     }
     channels[i].removeMember(kickFd);
@@ -525,13 +534,13 @@ void Server::KICK(int clientFd, const std::string &params) {
 
 void Server::INVITE(int clientFd, const std::string &params) {
     if (params.empty()) {
-        sendMessage(clientFd, ":server 461 INVITE :Not enough parameters\r\n");
+        sendMessage(clientFd, ":localhost 461 INVITE :Not enough parameters\r\n");
         return;
     }
     Client &client = getClientByFd(clientFd);
     std::vector<std::string> tokens = split_string(params, ' ');
     if (tokens.size() < 2) {
-        sendMessage(clientFd, ":server 461 INVITE :Not enough parameters\r\n");
+        sendMessage(clientFd, ":localhost 461 INVITE :Not enough parameters\r\n");
         return;
     }
     std::string nickToInvite = tokens[0];
@@ -544,11 +553,11 @@ void Server::INVITE(int clientFd, const std::string &params) {
             break;
     }
     if (i >= channels.size()) {
-        sendMessage(clientFd, ":server 403 " + channelName + " :No such channel\r\n");
+        sendMessage(clientFd, ":localhost 403 " + channelName + " :No such channel\r\n");
         return;
     }
     if (isPartOfChannel(clientFd, channelName) == false) {
-        sendMessage(clientFd, ":server 442 " + channelName + " :You're not on that channel\r\n");
+        sendMessage(clientFd, ":localhost 442 " + channelName + " :You're not on that channel\r\n");
         return;
     }
     size_t j;
@@ -560,15 +569,15 @@ void Server::INVITE(int clientFd, const std::string &params) {
         }
     }
     if (inviteFd == -1) {
-        sendMessage(clientFd, ":server 401 " + client.getNickname() + " " + nickToInvite + " :No such nick/channel\r\n");
+        sendMessage(clientFd, ":localhost 401 " + client.getNickname() + " " + nickToInvite + " :No such nick/channel\r\n");
         return;
     }
     if (channels[i].isMember(inviteFd)) {
-        sendMessage(clientFd, ":server 443 " + client.getNickname() + " " + nickToInvite + " " + channelName + " :is already on channel\r\n");
+        sendMessage(clientFd, ":localhost 443 " + client.getNickname() + " " + nickToInvite + " " + channelName + " :is already on channel\r\n");
         return;
     }
     channels[i].addInvitedMember(inviteFd);
-    sendMessage(clientFd, ":server 341 " + client.getNickname() + " " + nickToInvite + " " + channelName + "\r\n");
+    sendMessage(clientFd, ":localhost 341 " + client.getNickname() + " " + nickToInvite + " " + channelName + "\r\n");
     sendMessage(inviteFd, ":" + client.getNickname() + "!" + client.getUsername() + "@localhost INVITE " + nickToInvite + " " + channelName + "\r\n");
 }
 
