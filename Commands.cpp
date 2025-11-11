@@ -388,8 +388,26 @@ void Server::NICK(int clientFd, const std::string &params) {
 		return;
 	}
 
-	// Setting nickname
-	getClientByFd(clientFd).setNickname(params);
+	std::string oldNick = client.getNickname();
+	client.setNickname(params);
+	std::string newNick = client.getNickname();
+
+	std::cout << "Client " << clientFd << " changed nickname from " << oldNick << " to " << newNick << std::endl;
+
+	std::string prefixNick = !oldNick.empty() ? oldNick : newNick;
+	std::string nickMsg = ":" + prefixNick + "!" + client.getUsername() + "@localhost NICK " + newNick + "\r\n";
+
+	for (size_t i = 0; i < channels.size(); ++i) {
+		if (channels[i].isMember(clientFd)) {
+			const std::vector<int> &members = channels[i].getMembers();
+			for (size_t j = 0; j < members.size(); ++j) {
+				sendMessage(members[j], nickMsg);
+			}
+		}
+	}
+	if (oldNick.empty()) {
+		sendMessage(clientFd, nickMsg);
+	}
 }
 
 void Server::USER(int clientFd, const std::string &params) {
