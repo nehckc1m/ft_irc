@@ -43,7 +43,6 @@ void Client::setNickname(const std::string &nickname) {
 }
 
 void Client::setAuthenticate() {
-	std::cout << "setAuthenticate" << std::endl;
     _authenticated = true;
 }
 

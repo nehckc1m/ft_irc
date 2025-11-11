@@ -390,7 +390,6 @@ void Server::NICK(int clientFd, const std::string &params) {
 
 	// Setting nickname
 	getClientByFd(clientFd).setNickname(params);
-	sendMessage(clientFd, ":" + params + "!" + client.getUsername() + "@localhost NICK " + params + "\r\n");
 }
 
 void Server::USER(int clientFd, const std::string &params) {
@@ -588,3 +587,17 @@ void Server::CAP(int clientFd, const std::string &params) {
 	(void) params;
 }
 
+void Server::QUIT(int clientFd, const std::string &params) {
+	std::cout << "Server::QUIT called" << std::endl;
+	Client& c = getClientByFd(clientFd);
+	std::string quit_message = (!params.empty() && params[0] == ':') ? params : ":Client Quit";
+	quit_message = ":" + c.getNickname() + "!~" + c.getUsername() + "@localhost QUIT " + quit_message + "\r\n";
+	for (std::vector<Channel>::const_iterator it = channels.begin(); it != channels.end(); ++it) {
+		if (it->isMember(clientFd)) {
+			for (std::vector<int>::const_iterator itm = it->getMembers().begin(); itm != it->getMembers().end(); ++itm)
+				if (*itm != clientFd) sendMessage(*itm, quit_message);
+				//	sendMessage(*itm, ":"+c.getNickname()+"!~"+ c.getUsername() + "@localhost QUIT " + quit_message + "\r\n");
+		}
+	}
+	removeClient(clientFd);
+}

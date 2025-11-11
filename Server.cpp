@@ -71,11 +71,13 @@ void Server::acceptNewConnection() {
               close(client_socket);
               return;
        }
+	   
+	   clientBuffers[client_socket] = "";
+
        Client newClient(client_socket);
        clients.push_back(newClient);
        addSocketToPoll(client_socket);
        std::cout << "New client connected of fd: " << client_socket << std::endl;
-       sendMessage(client_socket, "STOP RIGHT THERE THIS IS GOTTA GO FAST IRC SERVER!\r\nPlease authenticate using PASS <password>\r\n");
 }
 
 void Server::run(){
@@ -112,6 +114,7 @@ void Server::run(){
 
 void Server::removeClient(int clientFd)
 {
+		std::cout << "Server::removeClient called" << std::endl;
        clientBuffers.erase(clientFd);
        for (size_t i = 0; i < clients.size(); ++i)
        {

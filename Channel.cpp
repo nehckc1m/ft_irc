@@ -9,8 +9,9 @@ Channel::Channel(const std::string &name){
     _topicRestricted = false;
     _protected = false;
     _userLimit = 0;
+	_members = std::vector<int>();
+	_invitedMembers = std::vector<int>();
 	_operators = std::vector<int>();
-    std::cout << "Channel " << name << " created." << std::endl;
 }
 
 Channel& Channel::operator=(const Channel &other) {

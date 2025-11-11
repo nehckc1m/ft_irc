@@ -13,18 +13,36 @@ void Server::SignalHandler(int signum) {
 }
 
 void Server::processBuffer(int clientFd, char *buffer, int bytes) {
-    clientBuffers[clientFd] += std::string(buffer, bytes);
-    std::string &clientBuffer = clientBuffers[clientFd];
-    size_t pos;
+    std::cout << "Server::processBuffer called fd=" << clientFd << std::endl;
+	std::cout << GRAY << "add to buffer the str=" << std::string(buffer, bytes) << RST << std::endl;
+	
+	if (clientBuffers.find(clientFd) == clientBuffers.end()) {
+		std::cout << RED << "Client not found in buffer, fd=" << clientFd << RST << std::endl;
+		return;
+	}
+	
+	clientBuffers[clientFd] += std::string(buffer, bytes);
+    std::string clientBuffer = clientBuffers[clientFd];  
+    std::size_t pos;
+    bool clientDisconnected = false;
 
-    while ((pos = clientBuffer.find('\n')) != std::string::npos) {
+    while ((pos = clientBuffer.find('\n')) != std::string::npos && !clientDisconnected) {
         std::string command = clientBuffer.substr(0, pos);
         clientBuffer.erase(0, pos + 1);
         if (!command.empty() && command[command.size() - 1] == '\r') {
-            command.erase(command.size() - 1); // Remove trailing '\r' if present
+            command.erase(command.size() - 1);
         }
-        // Here you would handle the command, e.g., call server.handleCommand(clientFd, command);
+        
         handleCommand(clientFd, command);
+        
+        if (clientBuffers.find(clientFd) == clientBuffers.end()) {
+            clientDisconnected = true;
+            std::cout << "Client " << clientFd << " disconnected (QUIT command)" << std::endl;
+        }
+    }
+
+    if (clientBuffers.find(clientFd) != clientBuffers.end()) {
+        clientBuffers[clientFd] = clientBuffer;
     }
 }
 
@@ -42,7 +60,7 @@ void Server::handleCommand(int clientFd, const std::string &command) {
     pos = command.find(' ');
     std::string cmd = command;
     std::string params = "";
-	if (DEBUG == 1) std::cout << GRAY << "[" << clientFd << "]" << P_CYAN << command << RST << std::endl;
+	if (DEBUG == 1) std::cout << GRAY << "[" << clientFd << "]" << CYAN << command << RST << std::endl;
     if (pos != std::string::npos)
 		params = cmd.substr(pos + 1);
     cmd = cmd.substr(0, pos);
@@ -59,13 +77,16 @@ void Server::handleCommand(int clientFd, const std::string &command) {
 	commandMap["INVITE"] = &Server::INVITE;
 	commandMap["PING"] = &Server::PING;
 	commandMap["CAP"] = &Server::CAP;
+	commandMap["QUIT"] = &Server::QUIT;
     if (commandMap.find(cmd) != commandMap.end()) {
     	std::cout << "Handling command from fd " << clientFd << ": " << cmd << std::endl;
         (this->*commandMap[cmd])(clientFd, params);
     } else {
 		Reply reply(cmd, getClientByFd(clientFd));
-		std::cout << reply.msg(ERR_UNKNOWNCOMMAND) << std::endl;
 		sendMessage(clientFd, reply.msg(ERR_UNKNOWNCOMMAND));
+		std::string tmp = reply.msg(ERR_UNKNOWNCOMMAND);
+		tmp.erase(tmp.end()-1);
+		std::cout << tmp << std::endl;
 	}
 }
 
@@ -96,7 +117,7 @@ void Server::sendMessage(int clientFd, const std::string &message) {
         removeClient(clientFd);
         return;
     }
-	if (DEBUG == 1) std::cout << GRAY << "[->" << clientFd << "]" P_CYAN << message << RST <<std::endl;
+	if (DEBUG == 1) std::cout << GRAY << "[->" << clientFd << "]" CYAN << message << RST <<std::endl;
     flushSendBuffer(client);
 }
 
