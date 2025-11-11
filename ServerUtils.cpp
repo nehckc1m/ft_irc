@@ -13,9 +13,6 @@ void Server::SignalHandler(int signum) {
 }
 
 void Server::processBuffer(int clientFd, char *buffer, int bytes) {
-    std::cout << "Server::processBuffer called fd=" << clientFd << std::endl;
-	std::cout << GRAY << "add to buffer the str=" << std::string(buffer, bytes) << RST << std::endl;
-	
 	if (clientBuffers.find(clientFd) == clientBuffers.end()) {
 		std::cout << RED << "Client not found in buffer, fd=" << clientFd << RST << std::endl;
 		return;
