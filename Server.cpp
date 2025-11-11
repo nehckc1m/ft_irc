@@ -78,7 +78,6 @@ void Server::acceptNewConnection() {
        clients.push_back(newClient);
        addSocketToPoll(client_socket);
        std::cout << "New client connected of fd: " << client_socket << std::endl;
-       sendMessage(client_socket, "STOP RIGHT THERE THIS IS GOTTA GO FAST IRC SERVER!\r\nPlease authenticate using PASS <password>\r\n");
 }
 
 void Server::run(){
