@@ -3,7 +3,7 @@
 void check_args(int ac, char **av)
 {
     if (ac != 3)
-		throw std::invalid_argument("incorrect number of arguments \nUsage: ./ircserv <port> <password>");
+		throw std::invalid_argument("incorrect number of arguments \n" ORANGE "Usage: ./ircserv <port> <password>");
 	const int port = std::atoi(av[1]);
 	if (port < 1024 || port > 65535)
 		throw std::invalid_argument("incorrect port number");
@@ -19,7 +19,7 @@ int main (int ac, char **av) {
         server.run();
         
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << RED "Error: " << e.what() << RST << std::endl;
         return 1;
     }
     return 0;

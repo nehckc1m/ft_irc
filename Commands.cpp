@@ -517,7 +517,7 @@ void Server::KICK(int clientFd, const std::string &params) {
     }
     std::string kickMessage;
     if (!reason.empty()) {
-        kickMessage = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost KICK " + channelName + " " + nickToKick + " :" + reason + "\r\n";
+        kickMessage = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost KICK " + channelName + " " + nickToKick + " " + reason + "\r\n";
     } else {
         kickMessage = ":" + client.getNickname() + "!" + client.getUsername() + "@localhost KICK " + channelName + " " + nickToKick + "\r\n";
     }
