@@ -114,7 +114,7 @@ void Server::sendMessage(int clientFd, const std::string &message) {
         removeClient(clientFd);
         return;
     }
-	if (DEBUG == 1) std::cout << GRAY << "[->" << clientFd << "]" CYAN << message << RST <<std::endl;
+	if (DEBUG == 1) std::cout << GRAY << "[->" << clientFd << "]" CYAN << std::string(message).erase(message.size() - 2) << RST << std::endl;
     flushSendBuffer(client);
 }
 

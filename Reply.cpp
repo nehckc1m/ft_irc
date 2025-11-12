@@ -57,10 +57,10 @@ void Reply::init()
 {
 	const std::string srv = ":localhost ";
 	const std::string nick = " " + (!client.getNickname().empty() ? client.getNickname() : "*") + " ";
-	message[RPL_WELCOME] = srv + "001" + nick + ":Welcome to the FT_IRC server!\r\n";
+	message[RPL_WELCOME] = srv + "001" + nick + ORANGE ":Welcome to the FT_IRC server!" RST "\r\n";
 	message[RPL_YOURHOST] = srv + "002" + nick + ":Your host is localhost, running version 1.0\r\n";
 	message[RPL_CREATED] = srv + "003" + nick + ":This server was created today\r\n";
-	message[RPL_MYINFO] = srv + "004" + nick + " :ft_irc 42 Le Havre\r\n";
+	message[RPL_MYINFO] = srv + "004" + nick + ":ft_irc 42 Le Havre\r\n";
 	message[RPL_CHANNELMODEIS] = srv + str(RPL_CHANNELMODEIS) + nick + "$1 $2\r\n"; 
 	message[RPL_NOTOPIC] = srv + str(RPL_NOTOPIC) + nick + "$1 :No topic is set\r\n";
 	message[RPL_TOPIC] = srv + str(RPL_TOPIC) + nick + "$1 :$2\r\n";
