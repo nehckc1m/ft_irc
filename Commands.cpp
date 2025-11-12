@@ -81,6 +81,10 @@ void Server::JOIN(int clientFd, const std::string &params) {
 
 void Server::PRIVMSG(int clientFd, const std::string &params) {
 	Reply reply("PRIVMSG", getClientByFd(clientFd));
+
+	if (!getClientByFd(clientFd).isRegistered())
+		return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
+
     if (params.empty()) {
         sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
         return;
@@ -159,6 +163,9 @@ void Server::MSG_CHANNEL(int clientFd, const std::string &channelName, const std
 
 void Server::MODE(int clientFd, const std::string &params) {
     Reply reply("MODE", getClientByFd(clientFd));
+	if (!getClientByFd(clientFd).isRegistered())
+		return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
+
     if (params.empty()) {
         sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
         return;
@@ -299,6 +306,9 @@ void Server::MODE(int clientFd, const std::string &params) {
 
 void Server::TOPIC(int clientFd, const std::string &params) {
 	Reply reply("TOPIC", getClientByFd(clientFd));
+	if (!getClientByFd(clientFd).isRegistered())
+		return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
+
     if (params.empty()) {
         sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
         return;
@@ -367,9 +377,10 @@ void Server::TOPIC(int clientFd, const std::string &params) {
 void Server::NICK(int clientFd, const std::string &params) {
 	Reply reply("NICK", getClientByFd(clientFd));
     Client &client = getClientByFd(clientFd);
-    if (!client.isAuthenticated()) {
+
+	if (!client.isAuthenticated())
         return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
-    }
+
 	if (params.empty()) {
 		std::cout << reply.msg(ERR_NONICKNAMEGIVEN) << std::endl;
 		sendMessage(clientFd, reply.msg(ERR_NONICKNAMEGIVEN));
@@ -395,9 +406,9 @@ void Server::NICK(int clientFd, const std::string &params) {
 void Server::USER(int clientFd, const std::string &params) {
 	Client &client = getClientByFd(clientFd);
 	Reply reply("USER", client);
-    if (client.getNickname().empty()) {
+
+	if (client.getNickname().empty())
         return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
-    }
 
 	std::vector<std::string> args = split_string(params, ' ');
 
@@ -436,7 +447,9 @@ void Server::USER(int clientFd, const std::string &params) {
 	
 void Server::PART(int clientFd, const std::string &params) {
 	Reply reply("PART", getClientByFd(clientFd));
-    std::cout << "Client " << clientFd << " is attempting to part channel with params: " << params << std::endl;
+
+	if (!getClientByFd(clientFd).isRegistered())
+		return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
 
     if (params.empty()) {
         sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
@@ -466,6 +479,10 @@ void Server::PART(int clientFd, const std::string &params) {
 
 void Server::KICK(int clientFd, const std::string &params) {
 	Reply reply("KICK", getClientByFd(clientFd));
+
+	if (!getClientByFd(clientFd).isRegistered())
+		return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
+	
     if (params.empty()) {
         sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
         return;
@@ -531,7 +548,11 @@ void Server::KICK(int clientFd, const std::string &params) {
 
 void Server::INVITE(int clientFd, const std::string &params) {
 	Reply reply("INVITE", getClientByFd(clientFd));
-    if (params.empty()) {
+
+	if (!getClientByFd(clientFd).isRegistered())
+		return sendMessage(clientFd, reply.msg(ERR_NOTREGISTERED));
+
+	if (params.empty()) {
         sendMessage(clientFd, reply.msg(ERR_NEEDMOREPARAMS));
         return;
     }
